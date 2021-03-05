@@ -10,28 +10,35 @@
 ##
 ###############################################################################
 
-if [ $# -gt 4 ]; then
-  echo "tem argumentos a mais!"
-  echo "SYNTAX ERROR: [nome = <nome> <apelido>] [nº de cédula = xxxxx] [Centro de Saúde = CS<localidade>] [disponibilidade = 0 ou 1]"
+
+syntax="<'Nome Apelido'> <'nº de cédula (5 digitos)> <'CS[localidade]> <disponibilidade (0 ou 1)>"
+
+
+#verifica o 'field':disponibilidade
+if [[ ! $4 =~ [0-1] ]]; then
+  echo "SYNTAX ERROR: $syntax"
+  exit 1
+#verifica o 'field':CSlocalidade
+elif [[ ! $3 =~ ^CS ]]; then
+  echo "SYNTAX ERROR: $syntax"
+  exit 1
+#verifica o 'field':cédula
+elif [[ ! $2 =~ [0-9][0-9][0-9][0-9][0-9] ]]; then
+  echo "SYNTAX ERROR: $syntax"
+  exit 1
+#verifica o 'field':nome
+elif [[ ! $1 =~ ^[A-Za-z]+$ ]]; then
+  echo "nome inválido !" 
+  echo "SYNTAX ERROR: $syntax"
   exit 1
 fi
 
 
-if [[ $(echo "$2" | wc -c) != 6 ]]; then
-  echo "nº de utente inválido, deve ter exactamente 5 dígitos"
-  echo "SYNTAX ERROR: [nome = <nome> <apelido>] [nº de cédula = xxxxx] [Centro de Saúde = CS<localidade>] [disponibilidade = 0 ou 1]"
-  exit 1
-fi
+echo $1:$2:$3:$4 
 
-if [[ ! $( echo "$3" | grep "^CS" ) ]]; then
-   echo "SYNTAX ERROR: [nome = <nome> <apelido>] [nº de cédula = xxxxx] [Centro de Saúde = CS<localidade>] [disponibilidade = 0 ou 1]"
-  exit 1
-fi
 
-case $4 in
-    [^01]) echo "disponibilidade tem de ser 0 ou 1"
-  exit 1
-esac
 
-echo "$1:$2:$3:$4"
+
+
+
 

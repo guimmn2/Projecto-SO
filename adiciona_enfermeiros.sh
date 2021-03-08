@@ -27,7 +27,7 @@ elif [[ ! $2 =~ [0-9][0-9][0-9][0-9][0-9] ]]; then
   echo "SYNTAX ERROR: $syntax"
   exit 1
 #verifica o 'field':nome
-elif [[ ! $1 =~ ^[A-Za-z]+$ ]]; then
+elif [[ ! $1 =~ ^[A-Za-z]+( [A-Za-z]+)*$ ]]; then
   echo "nome inválido !" 
   echo "SYNTAX ERROR: $syntax"
   exit 1

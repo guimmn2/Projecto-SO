@@ -95,4 +95,4 @@ fi
 #finalmente, se nenhum dos failsafes anteriores for activado o enfermeiro é registado com sucesso
 #fazendo echo do input com o formato correcto para o ficheiro enfermeiros.txt
 
-echo $nome:$id:$loc:$disp >> $ficheiro
+echo $nome:$id:$loc:0:$disp >> $ficheiro

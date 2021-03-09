@@ -75,7 +75,7 @@ elif [[ ! $nome =~ ^[A-Za-z]+( [A-Za-z]+)*$ ]]; then
 #procura com o comando grep a cédula no ficheiro enfermeiros.txt, 
 #se o encontrar é porque o enfermeiro já está registado.
 
-elif grep "$id" $ficheiro ; then
+elif grep -q "$id" $ficheiro ; then
   echo "enfermeiro já se encontra registado!"
   exit 1
 
@@ -84,7 +84,7 @@ elif grep "$id" $ficheiro ; then
 #procura com o comando grep -i (para ignorar o case) a localidade no ficheiro enfermeiros.txt, 
 #se o encontrar é porque já existe um enfermeiro registado na localidade.
 
-elif grep -i "$loc" $ficheiro; then
+elif grep -q -i "$loc" $ficheiro; then
   echo "localidade já tem enfermeiro registado!"
   exit 1
 fi

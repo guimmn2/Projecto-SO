@@ -12,7 +12,6 @@
 
 
 nrCidadaos=$( grep -i "$1" 'cidadaos.txt' | wc -l )
-cidadaos='cidadaos.txt'
 
 if [[ $1 == 'enfermeiros' ]]; then
   grep '1$' enfermeiros.txt | awk -F ':' '{ print $2 }'
@@ -20,7 +19,7 @@ if [[ $1 == 'enfermeiros' ]]; then
 elif [[ $1 == 'registados' ]]; then
   awk -F ':' '{ print $1, $2, $3 }' cidadaos.txt | grep "[6-9][0-9]$" | sort -k 4 -n -r
 
-elif grep -q -i "$1" $cidadaos; then 
+elif grep -q -i "$1" cidadaos.txt; then 
   echo "O número de cidadãos registados em $1 é $nrCidadaos"  #aqui a localização aparece na msg como a pessoa a escreve (não sei formatar)
 else
   echo "não existem enfermeiros nesta localidade"

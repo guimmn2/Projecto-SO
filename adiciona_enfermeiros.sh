@@ -19,7 +19,7 @@
 
 
 ##Mensagem de erro que é mostrada caso haja problemas com o input do cliente.
-syntax="<'Nome Apelido'> <'nº de cédula (5 digitos)> <'CS[localidade]> <disponibilidade (0 ou 1)>"
+syntax="Erro: Síntaxe: $0 <número cédula profissional>:<nome>:<centro saúde associado>:<no de vacinações efetuadas>:<disponibilidade>"
 
 ficheiro='enfermeiros.txt'
 
@@ -40,7 +40,7 @@ fi
 
 #verifica o 'field':disponibilidade usando a 'regex' [0-1] 
 #se o que for inserido não for um inteiro ou, sendo inteiro, não se encontrar entre 0-1 devole erro.
-if [[ ! $disp =~ [0-1] ]]; then
+if [[ ! $disp =~ ^[0-1]$ ]]; then
   echo "SYNTAX ERROR: $syntax"
   exit 1
 
@@ -96,3 +96,4 @@ fi
 #fazendo echo do input com o formato correcto para o ficheiro enfermeiros.txt
 
 echo $id:$nome:$loc:0:$disp >> $ficheiro
+cat $ficheiro

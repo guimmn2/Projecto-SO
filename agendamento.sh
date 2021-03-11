@@ -63,13 +63,14 @@ getCidData() {
     
 }
 
-getEnfData
+getEnfData 
 getCidData
 
-nrCid="${#cidData[@]}"
-nrEnf="${#enfData[@]}"
+nrCid="${#cidData[@]}" #nr de cidadãos retirado do length do array cidData
+nrEnf="${#enfData[@]}" #nr de enfermeiros disponiveis retirado do length do array enfData
+data=$(date +%y-%m-%d) #guarda a data 
 
-matchRawData() {
+if verifDisp true; then
   for (( i=0; i < $nrCid; i++ )); do
     for (( j=0; j < $nrEnf ;j++)); do
 
@@ -77,11 +78,16 @@ matchRawData() {
       enfLocal=$( echo "${enfData[$j]}" | cut -d ':' -f3 | sed 's/CS//g' )
 
       if [ $cidLocal = $enfLocal ]; then
-        echo "${enfData[$j]}:${cidData[$i]}"
-        echo "${enfData[$j]}:${cidData[$i]}" >> agendamento.txt
+        echo "${enfData[$j]}:${cidData[$i]}" | awk -F ":" '{ OFS = ":" } { print $1, $2, $4, $5, "CS"$6 }' | sed -e "s/$/:"$data"/g"
+        echo "${enfData[$j]}:${cidData[$i]}" | awk -F ":" '{ OFS = ":" } { print $1, $2, $4, $5, "CS"$6 }' | sed -e "s/$/:$data/g" >> tmp.txt
       fi
     done
   done
-}
+else
+  echo "nenhum enfermeiro disponível!"
+  exit 1
+fi
+  
+cat tmp.txt > agendamento.txt
+rm tmp.txt
 
-matchRawData

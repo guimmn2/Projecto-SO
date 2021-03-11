@@ -39,17 +39,12 @@ getEnfData() {
 
   while read line; do
     enfData+=("$line")
-    #echo "${enfData[$i]}"
     i=$(( $i + 1 ))
   done < tmp.txt
 
   rm tmp.txt
     
 }
-
-#teste para função getEnfData
-#getEnfData
-#echo "${#enfData[@]}"
 
 
 getCidData() {
@@ -62,22 +57,18 @@ getCidData() {
 
   while read line; do
     cidData+=("$line")
-    #echo "${cidData[$i]}"
   done < tmp.txt
 
   rm tmp.txt
     
 }
 
-#teste para função getCidData
-#getCidData
-#echo "${#cidData[@]}"
-
 getEnfData
 getCidData
 
 nrCid="${#cidData[@]}"
 nrEnf="${#enfData[@]}"
+
 matchRawData() {
   for (( i=0; i < $nrCid; i++ )); do
     for (( j=0; j < $nrEnf ;j++)); do
@@ -87,23 +78,10 @@ matchRawData() {
 
       if [ $cidLocal = $enfLocal ]; then
         echo "${enfData[$j]}:${cidData[$i]}"
+        echo "${enfData[$j]}:${cidData[$i]}" >> agendamento.txt
       fi
     done
   done
 }
-#cidLocal=$( echo "${cidData[0]}" | cut -d ':' -f3  )
-#echo "${cidData[0]}"
-#echo "$cidLocal"
-#echo "$nrEnf"
-#echo "$nrCid"
 
-    
-
-
-
-
-
-
-
-
-
+matchRawData

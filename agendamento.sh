@@ -78,7 +78,6 @@ if verifDisp true; then
       enfLocal=$( echo "${enfData[$j]}" | cut -d ':' -f3 | sed 's/CS//g' )
 
       if [ $cidLocal = $enfLocal ]; then
-        echo "${enfData[$j]}:${cidData[$i]}" | awk -F ":" '{ OFS = ":" } { print $1, $2, $4, $5, "CS"$6 }' | sed -e "s/$/:"$data"/g"
         echo "${enfData[$j]}:${cidData[$i]}" | awk -F ":" '{ OFS = ":" } { print $1, $2, $4, $5, "CS"$6 }' | sed -e "s/$/:$data/g" >> tmp.txt
       fi
     done

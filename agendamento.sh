@@ -6,7 +6,14 @@
 ## Aluno: Nº:       Nome: 
 ## Nome do Módulo: agendamento.sh
 ## Descrição/Explicação do Módulo: 
-##
+##  
+##  Neste script criei 3 funções. A primeira e mais importante é a verifDisp que verifica se existe sequer algum enfermeiro disponível.
+##  A segunda e a terceira são idênticas. Servem para guardar num array as informações importantes dos enfermeiros e cidadãos.
+##  Para finalizar a parte de criar o ficheiro não é uma função, mas está contingente na existência de enfermeiros. Se existirem enfermeiros
+##  então as duas funções são chamadas e é criado a partir dos arrays um output bem formatado, que é redireccionado para o ficheiro agendamento.txt.
+##  Caso contrário, as funções de informação não são chamadas, o script dá erro, pois não existem enfermeiros disponíveis.
+##  
+##  Os pormenores técnicos podem ser encontrados ao longo do código nos comentários (isto é, a explicação do funcionamento do script concretamente).
 ##
 ###############################################################################
 

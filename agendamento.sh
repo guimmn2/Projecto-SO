@@ -18,6 +18,10 @@ declare -a enfData #inicializa array enfData para guardar dados pertinentes dos 
 declare -a cidData #inicializa array cidData para guardar dados pertinentes dos cidadãos
 
 
+#usando um grep com o flag -q para suprimir o output
+#verifica se existe alguma linha terminada em 1 (se algum enfermeiro está disponível) 
+#retorna true ou false conforme encontra ou não algum enfermeiro
+
 verifDisp() {
 
   if grep -q '1$' enfermeiros.txt; then
@@ -29,23 +33,31 @@ verifDisp() {
 }
 
 
+#com o uso do grep e awk obtem as informações importantes (id, nome e localidade) dos enfermeiros disponíveis
+#OFS = ":" garante output separado por ":"
+
 getEnfData() {
   
   grep '1$' enfermeiros.txt | awk -F ":" ' { OFS = ":" } { print $2, $1, $3 }' > tmp.txt
 
   i=0
   
+  #define do delimitador do read como um newline '\n', de forma a que leia linha a linha o ficheiro
   IFS=$'\n'
 
+  #lê o ficheiro tmp.txt linha a linha e carrega as informações para o array enfData
   while read line; do
     enfData+=("$line")
     i=$(( $i + 1 ))
   done < tmp.txt
 
+  #remove o ficheiro tmp.txt que serviu apenas para facilitar o armazenamento de informação no array
   rm tmp.txt
     
 }
 
+#esta função é idêntica à anterior, mas aplicada ao ficheiro cidadaos.txt
+#obtem o id nome e localidade
 
 getCidData() {
   
@@ -63,29 +75,41 @@ getCidData() {
     
 }
 
-getEnfData 
-getCidData
 
-nrCid="${#cidData[@]}" #nr de cidadãos retirado do length do array cidData
-nrEnf="${#enfData[@]}" #nr de enfermeiros disponiveis retirado do length do array enfData
-data=$(date +%y-%m-%d) #guarda a data 
+#funções só são usadas se houver pelo menos 1 enfermeiro disponível
+#se não houver nenhum enfermeiro disponível não vale a pena preencher os arrays com os dados, pois nenhuma vacinação será agendada
 
-if verifDisp true; then
-  for (( i=0; i < $nrCid; i++ )); do
-    for (( j=0; j < $nrEnf ;j++)); do
+if verifDisp true; then 
 
-      cidLocal=$( echo "${cidData[$i]}" | cut -d ':' -f3 )
-      enfLocal=$( echo "${enfData[$j]}" | cut -d ':' -f3 | sed 's/CS//g' )
+getEnfData                  #invocação das funções para preencher os arrays devidamente
+getCidData      
 
-      if [ $cidLocal = $enfLocal ]; then
+nrCid="${#cidData[@]}"      #nr de cidadãos retirado do length do array cidData
+nrEnf="${#enfData[@]}"      #nr de enfermeiros disponiveis retirado do length do array enfData
+data=$(date +%y-%m-%d)      #guarda a data 
+
+  for (( i=0; i < $nrCid; i++ )); do      #a cada cidadão no array cidData
+    for (( j=0; j < $nrEnf ;j++)); do     #por cada cidadão verifica o array enfData
+
+      cidLocal=$( echo "${cidData[$i]}" | cut -d ':' -f3 )                      #para obter a localização de cada cidadadão (na 3ª coluna por ':')
+      enfLocal=$( echo "${enfData[$j]}" | cut -d ':' -f3 | sed 's/CS//g' )      #para obter a localização de cada enfermeiro (na 3ª coluna por ':')
+                                                                                #retira o CS com sed para comparar facilmente as localidades
+
+      if [ $cidLocal = $enfLocal ]; then      #se as localidades forem iguais junta com o formato certo o cidadão com o enfermeiro respectivo      
+
+        #echo + awk para formatar correctamente output para um ficheiro temporário
+        #"CS"$6 adiciona o CS à localidade e o sed -e permite regex adiciona no fim ($) a variável $data
+        #OFS = ":" garante output separado por ":"
+
         echo "${enfData[$j]}:${cidData[$i]}" | awk -F ":" '{ OFS = ":" } { print $1, $2, $4, $5, "CS"$6 }' | sed -e "s/$/:$data/g" >> tmp.txt
+
       fi
     done
   done
-cat tmp.txt > agendamento.txt
-rm tmp.txt
+cat tmp.txt > agendamento.txt       #copia o conteudo de tmp.txt para agendamento.txt, escrevendo por cima
+rm tmp.txt                          
 else
   echo "nenhum enfermeiro disponível!"
-  echo "sem consultas hoje!" > agendamento.txt
+  echo "sem vacinas hoje!" > agendamento.txt
   exit 1
 fi

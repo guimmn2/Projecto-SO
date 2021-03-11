@@ -63,10 +63,8 @@ getCidData() {
     
 }
 
-#chama as funções para colocar as informações pertinentes dos enfermeiros e cidadãos nos arrays respectivos
-getEnfData
+getEnfData 
 getCidData
-
 
 nrCid="${#cidData[@]}" #nr de cidadãos retirado do length do array cidData
 nrEnf="${#enfData[@]}" #nr de enfermeiros disponiveis retirado do length do array enfData
@@ -74,24 +72,21 @@ data=$(date +%y-%m-%d) #guarda a data
 
 if verifDisp true; then
   for (( i=0; i < $nrCid; i++ )); do
-    for (( j=0; j < $nrEnf; j++ )); do
+    for (( j=0; j < $nrEnf ;j++)); do
 
-      localCid=$( echo "${cidData[$i]}" | cut -d ':' -f4 )
-      localEnf=$( echo "${enfData[$j]}" | cut -d ':' -f3 | sed 's/CS//g' )
+      cidLocal=$( echo "${cidData[$i]}" | cut -d ':' -f3 )
+      enfLocal=$( echo "${enfData[$j]}" | cut -d ':' -f3 | sed 's/CS//g' )
 
-      if [ "$localCid" = "$localEnf" ]; then
-
+      if [ $cidLocal = $enfLocal ]; then
         echo "${enfData[$j]}:${cidData[$i]}" | awk -F ":" '{ OFS = ":" } { print $1, $2, $4, $5, "CS"$6 }' | sed -e "s/$/:"$data"/g"
         echo "${enfData[$j]}:${cidData[$i]}" | awk -F ":" '{ OFS = ":" } { print $1, $2, $4, $5, "CS"$6 }' | sed -e "s/$/:$data/g" >> tmp.txt
-
       fi
     done
   done
-  cat tmp.txt > agendamento.txt
-  rm tmp.txt
+cat tmp.txt > agendamento.txt
+rm tmp.txt
 else
   echo "nenhum enfermeiro disponível!"
-  echo > agendamento.txt
+  echo "sem consultas hoje!" > agendamento.txt
   exit 1
 fi
-

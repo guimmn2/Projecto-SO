@@ -19,7 +19,11 @@ if [[ $1 == 'enfermeiros' ]]; then
 elif [[ $1 == 'registados' ]]; then
   awk -F ':' '{ print $1, $2, $3 }' cidadaos.txt | grep "[6-9][0-9]$" | sort -k 4 -n -r
 
-elif grep -q -i "$1" cidadaos.txt; then 
+elif [ -z $1 ]; then
+  echo "ERRO! campos possíveis: enfermeiros; registados ou <localidade>"
+  exit 1
+
+elif grep -w -q -i "$1" cidadaos.txt; then 
   echo "O número de cidadãos registados em $1 é $nrCidadaos"  #aqui a localização aparece na msg como a pessoa a escreve (não sei formatar)
 else
   echo "não existem enfermeiros nesta localidade"

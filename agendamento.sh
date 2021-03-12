@@ -26,7 +26,7 @@ if verifDisp true; then
   done < tmp.txt
 
 
-  nrLines=$( cat tmp.txt | wc -l ) #para saber quantas linhas ficaram
+  nrLines=$( cat tmp.txt | wc -l ) #para saber quantas linhas ficaram depois de escrever para o tmp2.txt
 
   while read line; do
     if [[ ! $line =~ ^: ]]; then

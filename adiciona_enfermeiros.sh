@@ -94,5 +94,7 @@ fi
 #fazendo echo do input com o formato correcto para o ficheiro enfermeiros.txt
 
 echo $id:$nome:$loc:0:$disp >> $ficheiro
+echo "enfermeiro $nome adicionado com sucesso!
+"
 cat $ficheiro
 

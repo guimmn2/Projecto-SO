@@ -17,7 +17,8 @@ done < tmp.txt
 nrLines=$( wc -l tmp.txt ) #para saber quantas linhas ficaram
 
 while read line; do
-  if[[ ! $line =~ "^:" ]]; then
+  if [[ ! $line =~ ^: ]]; then
     echo "$line"
     echo "$line" >> tmp.txt
-  done 
+  fi 
+done

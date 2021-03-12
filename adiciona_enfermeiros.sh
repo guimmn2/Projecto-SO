@@ -19,7 +19,7 @@
 
 
 ##Mensagem de erro que é mostrada caso haja problemas com o input do cliente.
-syntax="Erro: Síntaxe: $0 <nome>:<número cédula profissional>:<centro saúde associado>:<disponibilidade>"
+syntax="Erro: Síntaxe: $0 <número cédula profissional>:<nome>:<centro saúde associado>:<no de vacinações efetuadas>:<disponibilidade>"
 
 ficheiro='enfermeiros.txt'
 
@@ -95,3 +95,4 @@ fi
 
 echo $id:$nome:$loc:0:$disp >> $ficheiro
 cat $ficheiro
+

@@ -26,3 +26,5 @@
 # O 0 corresponde à inicialização do status de vacinação a 0
 
 awk -F '[:|-]' '{ OFS = ":"} { print (NR + 10000) , $2,(2021 - $6), $8, $10, 0 }' listagem.txt | sed 's/ :/:/g' > cidadaos.txt
+
+cat cidadaos.txt

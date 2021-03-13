@@ -3,7 +3,7 @@
 ###############################################################################
 ## ISCTE-IUL: Trabalho prático de Sistemas Operativos
 ##
-## Aluno: Nº:       Nome: 
+## Aluno: Nº:98662       Nome:Guilherme Nunes 
 ## Nome do Módulo: adiciona_enfermeiros.sh
 ## Descrição/Explicação do Módulo: 
 ## 
@@ -19,7 +19,7 @@
 
 
 ##Mensagem de erro que é mostrada caso haja problemas com o input do cliente.
-syntax="Erro: Síntaxe: $0 <nome>:<número cédula profissional>:<centro saúde associado>:<disponibilidade>"
+syntax="Erro: Síntaxe: $0 <nome>:<número cédula profissional>:<centro saúde associado>:<disponibilidade(0 ou 1)>"
 
 ficheiro='enfermeiros.txt'
 
@@ -41,21 +41,21 @@ fi
 #verifica o 'field':disponibilidade usando a 'regex' [0-1] 
 #se o que for inserido não for um inteiro ou, sendo inteiro, não se encontrar entre 0-1 devole erro.
 if [[ ! $disp =~ ^[0-1]$ ]]; then
-  echo "SYNTAX ERROR: $syntax"
+  echo "$syntax"
   exit 1
 
 #verifica o 'field':CSlocalidade usando a 'regex' ^CS
 #se o que for inserido não começar por CS (^CS) 
 #e não for apenas um 'string' constituido por um ou mais (+) caracteres alfabéticos até ao fim [A-Za-z]+$ devolve erro.
 elif [[ ! $loc =~ ^CS[A-Za-z]+$ ]]; then
-  echo "SYNTAX ERROR: $syntax"
+  echo "$syntax"
   exit 1
 
 #verifica o 'field':cédula:
 #se o input for constituido por mais do que 5 digitos {5} (que têm de estar entre [0-9]) devolve erro.
 
 elif [[ ! $id =~ ^[0-9]{5}$ ]]; then
-  echo "SYNTAX ERROR: $syntax"
+  echo "$syntax"
   exit 1
 
 
@@ -67,7 +67,7 @@ elif [[ ! $id =~ ^[0-9]{5}$ ]]; then
 # O espaço antes do [A-Za-z], dentro dos parentesis, garante que se podem adicionar nomes dentro de plicas separados por espaços.
 
 elif [[ ! $nome =~ ^[A-Za-z]+( [A-Za-z]+)*$ ]]; then
-  echo "SYNTAX ERROR: $syntax"
+  echo "$syntax"
   exit 1
 
 
@@ -75,7 +75,7 @@ elif [[ ! $nome =~ ^[A-Za-z]+( [A-Za-z]+)*$ ]]; then
 #procura com o comando grep a cédula no ficheiro enfermeiros.txt, 
 #se o encontrar é porque o enfermeiro já está registado.
 
-elif grep -q "$id" $ficheiro ; then
+elif grep -q -w "$id" $ficheiro ; then
   echo "enfermeiro já se encontra registado!"
   exit 1
 
@@ -84,7 +84,7 @@ elif grep -q "$id" $ficheiro ; then
 #procura com o comando grep -i (para ignorar o case) a localidade no ficheiro enfermeiros.txt, 
 #se o encontrar é porque já existe um enfermeiro registado na localidade.
 
-elif grep -q -i "$loc" $ficheiro; then
+elif grep -q -i -w "$loc" $ficheiro; then
   echo "localidade já tem enfermeiro registado!"
   exit 1
 fi

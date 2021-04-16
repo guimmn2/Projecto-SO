@@ -94,6 +94,7 @@ int main (){
 
         } else {
 
+            //por alguma razão aqui espera que eu carregue no enter para tentar abrir o servidor.pid ???
             my_fgets(sv_pid, 5, sp);
             //printf("%s\n", sv_pid);
             int sv_pid_value = atoi(sv_pid); //converter de string para int

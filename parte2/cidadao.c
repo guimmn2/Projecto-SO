@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include <signal.h>
 
-//MY NAME JEFF
 
 Cidadao novo_cidadao(){
     Cidadao n;
@@ -73,6 +72,7 @@ int main (){
     FILE *f;
     f = fopen("pedidovacina.txt", "r");
 
+    //fazer a EXTRA-POINTS C10) !!!
     if ( f != NULL ){
         printf("Não é possível iniciar o processo de vacinação neste momento.\n");
         fclose(f);

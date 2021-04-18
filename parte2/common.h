@@ -7,15 +7,17 @@
  **     Definição das estruturas de dados comuns aos módulos servidor e cidadao
  **     Os alunos não deverão alterar os nomes dos ficheiros definidos em FILE_*
  **
+ ** OS ALUNOS NÃO DEVERÃO ACRESCENTAR NADA A ESTE FICHEIRO!!!
+ **
  ******************************************************************************/
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
 #include "utils.h"
 
-#define FILE_PEDIDO_VACINA "pedidovacina.txt"   // Ficheiro associado a um pedido de vacinas
-#define FILE_PID_SERVIDOR  "servidor.pid"       // Ficheiro que armazena o PID do servidor
-#define FILE_ENFERMEIROS   "enfermeiros.dat"    // Ficheiro que tem a lista de enfermeiros associados aos Centros de Saúde para vacinação
+#define FILE_PEDIDO_VACINA "pedidovacina.txt"   // Nome do Ficheiro associado a um pedido de vacinas
+#define FILE_PID_SERVIDOR  "servidor.pid"       // Nome do Ficheiro que armazena o PID do servidor
+#define FILE_ENFERMEIROS   "enfermeiros.dat"    // Nome do Ficheiro que tem a lista de enfermeiros associados aos Centros de Saúde para vacinação
 
 #define NUM_VAGAS 15         // Número de vagas de cidadãos que poderão estar a ser vacinados simultâneamente
 #define TEMPO_CONSULTA 600   // Tempo em segundos que leva a realizar uma consulta de vacinação pelo processo Servidor-Filho
@@ -43,5 +45,8 @@ typedef struct {             // Estrutura associada a uma vaga de um Cidadão a 
     Cidadao cidadao;         // Cidadão associado à sessão de vacinação
     int index_enfermeiro;    // Enfermeiro associado à sessão de vacinação (índice do array de Enfermeiros)
 } Vaga;                      // Poderão existir no máximo NUM_VAGAS elementos deste tipo.
+
+
+/* OS ALUNOS NÃO DEVERÃO ACRESCENTAR NADA A ESTE FICHEIRO!!! */
 
 #endif

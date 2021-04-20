@@ -14,13 +14,24 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+
 int main(){
 
     FILE *svp;
-    svp = fopen("servidor.pid","w"); //n adicionei condição if NULL, pois à paritda não existem problemas de permissões
-    fprintf(svp,"%d", getpid());
+    svp = fopen(FILE_PID_SERVIDOR,"w"); //n adicionei condição if NULL, pois à partida não existem problemas de permissões
+
+    if(svp == NULL){
+        erro("S1) Não consegui registar o servidor!");
+        exit(1);
+    }
+    else { 
+        fprintf(svp,"%d",getpid());
+        sucesso("S1) Escrevi no ficheiro FILE_PID_SERVIDOR o PID: %d", getpid());
+    }
 
 }
+
+
 
 
 

@@ -83,7 +83,6 @@ int main (){
         exit(1);
     }
     else {
-        
 
         Cidadao n = novo_cidadao();
         sucesso("C2) PID Cidadão: %d ", n.PID_cidadao);

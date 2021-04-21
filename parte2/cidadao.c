@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
+int exists; //flag para sigalarm
 
 Cidadao novo_cidadao(){
     Cidadao n;
@@ -58,6 +59,13 @@ Cidadao novo_cidadao(){
         exit(0);
     }
 
+    void handle_sigalrm(int sig){
+        if(!fopen(FILE_PEDIDO_VACINA, "r")){
+            exists = 1;
+            debug("%d\n", exists);
+        }
+    }
+
 int main (){
     
     char sv_pid[100]; //PID do servidor
@@ -78,15 +86,25 @@ int main (){
 
     //fazer a EXTRA-POINTS C10) !!!
     if ( f != NULL ){
+        exists = 0;
         erro("C3) Não é possível iniciar o processo de vacinação neste momento");
-        erro("C4) Não é possível criar o ficheiro FILE_PEDIDO_VACINA");
-        fclose(f);
-        exit(1);
+        signal(SIGALRM, handle_sigalrm);
+
+        debug("%d\n", exists);
+
+        while(exists == 0){
+            alarm(5);
+            pause();
+        }
     }
     else {
 
         sucesso("C3) Ficheiro FILE_PEDIDO_VACINA pode ser criado");
         f = fopen(FILE_PEDIDO_VACINA, "w");
+        if(f == NULL){
+        erro("C4) Não é possível criar o ficheiro FILE_PEDIDO_VACINA");
+        fclose(f);
+        }
         fprintf(f,"%d:%s:%d:%s:%s:%d:%d\n",n.num_utente, n.nome,n.idade, n.localidade, n.nr_telemovel, n.estado_vacinacao, n.PID_cidadao);
         fclose(f);
         sucesso("C4) Ficheiro FILE_PEDIDO_VACINA criado e preenchido");

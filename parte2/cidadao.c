@@ -97,8 +97,6 @@ int main (){
             pause();
         }
     }
-    else {
-
         sucesso("C3) Ficheiro FILE_PEDIDO_VACINA pode ser criado");
         f = fopen(FILE_PEDIDO_VACINA, "w");
         if(f == NULL){
@@ -131,6 +129,6 @@ int main (){
 
         }
 
-    }
+    
 
 }

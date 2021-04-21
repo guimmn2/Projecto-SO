@@ -33,17 +33,28 @@ int main(){
     // o nº de enfermeiros (nr_enfs) será igual a file_size/sizeof(e)
 
     FILE *fp;
-    Enfermeiro e, *p=NULL;
+    Enfermeiro e, *p;
     int file_size, nr_enfs;
-    fp = fopen(FILE_ENFERMEIROS, "r");
-    fseek(fp, 0L, SEEK_END);
+    fp = fopen(FILE_ENFERMEIROS, "rb");
+    if(fp == NULL){
+        erro("S2) Não consegui ler o ficheiro FILE_ENFERMEIROS!");
+    }
+    fseek(fp, 0, SEEK_END);
     file_size = ftell(fp); //obtém o tamanho do ficheiro
     //printf("file_size is %d\n", file_size);
     nr_enfs = file_size/sizeof(e);
     //printf("nº de enfs: %d\n", nr_enfs);
+    sucesso("S2) Ficheiro FILE_ENFERMEIROS tem %d bytes, ou seja, %d enfermeiros", file_size, nr_enfs);
     p = malloc(sizeof(e) * nr_enfs); //***
+    if(p == NULL){
+        printf("Null Pointer\n");
+        exit(1);
+    }
+    fread(p, sizeof(e), nr_enfs, fp);
+    printf("%s\n", p[0].nome);
 
-    
+
+
 }
 
 

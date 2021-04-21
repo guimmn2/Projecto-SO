@@ -60,10 +60,9 @@ Cidadao novo_cidadao(){
 
 int main (){
     
-    char sv_pid[5]; //PID do servidor
+    char sv_pid[100]; //PID do servidor
     
     //Sinais armados!
-    signal(SIGINT, signal_cancel);//ctrl-c
     signal(SIGUSR1, handle_sigusr1);//caso exista enfermeiro disponível
     signal(SIGUSR2, handle_sigusr2);//quando a vacinação terminar
     signal(SIGTERM, handle_sigterm);//caso não seja possível realizar a vacinação
@@ -71,6 +70,8 @@ int main (){
     //para verificar se está tudo a funcionar minimamente bem por aqui...
 //   printf("%s %d %d %s %s %d\n",n.nome, n.num_utente,n.idade, n.nr_telemovel, n.localidade, n.PID_cidadao);
 
+    Cidadao n = novo_cidadao(); //cria cidadão com o input do cliente
+    sucesso("C2) PID Cidadão: %d", n.PID_cidadao);
 
     FILE *f;
     f = fopen(FILE_PEDIDO_VACINA, "r");
@@ -84,13 +85,13 @@ int main (){
     }
     else {
 
-        Cidadao n = novo_cidadao();
-        sucesso("C2) PID Cidadão: %d ", n.PID_cidadao);
         sucesso("C3) Ficheiro FILE_PEDIDO_VACINA pode ser criado");
         f = fopen(FILE_PEDIDO_VACINA, "w");
         fprintf(f,"%d:%s:%d:%s:%s:%d:%d\n",n.num_utente, n.nome,n.idade, n.localidade, n.nr_telemovel, n.estado_vacinacao, n.PID_cidadao);
         fclose(f);
         sucesso("C4) Ficheiro FILE_PEDIDO_VACINA criado e preenchido");
+
+        signal(SIGINT, signal_cancel);//ctrl-c
 
         FILE *sp; //servidor.pid
         sp = fopen(FILE_PID_SERVIDOR, "r");
@@ -107,7 +108,7 @@ int main (){
             int sv_pid_value = atoi(sv_pid); //converter de string para int
             //printf("%d\n", sv_pid_value);
             fclose(sp);
-            kill(SIGUSR1, sv_pid_value);
+            kill(sv_pid_value,SIGUSR1);
             sucesso("C6) Sinal enviado ao Servidor: %d", sv_pid_value);
 
         }

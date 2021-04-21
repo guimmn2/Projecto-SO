@@ -29,6 +29,21 @@ int main(){
         sucesso("S1) Escrevi no ficheiro FILE_PID_SERVIDOR o PID: %d", getpid());
     }
 
+    //reservar espaço conforme o tamanho do ficheiro enfermeiros.dat
+    // o nº de enfermeiros (nr_enfs) será igual a file_size/sizeof(e)
+
+    FILE *fp;
+    Enfermeiro e, *p=NULL;
+    int file_size, nr_enfs;
+    fp = fopen(FILE_ENFERMEIROS, "r");
+    fseek(fp, 0L, SEEK_END);
+    file_size = ftell(fp); //obtém o tamanho do ficheiro
+    //printf("file_size is %d\n", file_size);
+    nr_enfs = file_size/sizeof(e);
+    //printf("nº de enfs: %d\n", nr_enfs);
+    p = malloc(sizeof(e) * nr_enfs); //***
+
+    
 }
 
 

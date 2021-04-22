@@ -19,15 +19,36 @@ void handle_sigusr1(int sig){
     sucesso("S4) Servidor espera pedidos");
     FILE *f;
     f = fopen(FILE_PEDIDO_VACINA, "r");
-    fseek(f,0,SEEK_END);
+
+    if(f == NULL){
+        erro("S5.1) Não foi possível ler o ficheiro FILE_PEDIDO_VACINA");
+    }
+    
+    fseek(f,0,SEEK_END);    //para determinar o tamanho do ficheiro, ou seja da string. 
     int sz = ftell(f);
     fseek(f,0,SEEK_SET);
-    char str[sz];
-    my_fgets(str, sz, f);
-    printf("%s\n", str);
-
-
     
+    char str[sz];
+    my_fgets(str, sz, f); //guarda a string em str.
+    
+    char* delim; 
+    delim = strtok(str, ":"); //define um delimitador ":"
+
+    char str_arr[7][20]; //cria array de strings para guardar campos
+    int i = 0; //iterador
+
+    while(delim != NULL){
+        //printf("%s\n", delim);
+        strcpy(str_arr[i], delim);
+        delim = strtok(NULL, ":");
+        i++;
+    }
+
+    printf("Chegou o cidadão com o pedido no %s, com nº utente %s, para ser vacinado no Centro de Saúde CS%s\n", str_arr[6], str_arr[0], str_arr[3]);
+    sucesso("S5.1) Dados Cidadão: %s; %s; %s; %s; %s; %s", str_arr[0],str_arr[1],str_arr[2], str_arr[3],str_arr[4],str_arr[5], str_arr[6]);
+    
+
+
 
 }
 
@@ -82,7 +103,6 @@ int main(){
 
 
 }
-
 
 
 

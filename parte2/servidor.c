@@ -61,6 +61,7 @@ Cidadao get_cidadao_data(){
 
     if(f == NULL){
         erro("S5.1) Não foi possível ler o ficheiro FILE_PEDIDO_VACINA");
+        exit(1);
     }
     
     fseek(f,0,SEEK_END);    //para determinar o tamanho do ficheiro, ou seja da string. 
@@ -105,12 +106,13 @@ int verifica_localidade(){
 
     for(int i = 0; i < nr_enfs; i++){
         //debug("%s\n",e[i].CS_enfermeiro);
-        debug("nome: %s disp: %d\n", e[i].nome,e[i].disponibilidade);
+        //debug("nome: %s disp: %d\n", e[i].nome,e[i].disponibilidade);
         if(strcmp(cs_temp,e[i].CS_enfermeiro) == 0 && e[i].disponibilidade == 1){
             is_available = 1;
         }
     }
-        debug("%d\n", is_available);
+        //debug("%d\n", is_available);
+        is_available = 0;
         return is_available;
 }
 
@@ -131,10 +133,10 @@ int main(){
         erro("S1) Não consegui registar o servidor!");
         exit(1);
     }
-    else { 
-        fprintf(svp,"%d",getpid());
-        sucesso("S1) Escrevi no ficheiro FILE_PID_SERVIDOR o PID: %d", getpid());
-    }
+     
+    fprintf(svp,"%d",getpid());
+    sucesso("S1) Escrevi no ficheiro FILE_PID_SERVIDOR o PID: %d", getpid());
+    
     Enfermeiro *e = define_enfermeiros();
 
     Vaga v[NUM_VAGAS];
@@ -147,8 +149,13 @@ int main(){
     sucesso("S4) Servidor espera pedidos");
     pause();
 
-    verifica_localidade();
-    
+    //verificar a disponibilidade de enfermeiro, se existir na localidade
+    if ( verifica_localidade() != 1){ 
+        // != 1, significa que não está disponível
+        kill(get_cidadao_data().PID_cidadao,SIGTERM);
+        //debug("enviei o sinal!\n");
+    }    
+    pause(); //fica a espera de receber novos pedidos, ou seja outros sigusr1
 
 
 

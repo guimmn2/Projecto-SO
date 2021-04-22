@@ -15,8 +15,44 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+int get_nr_enfs(){
+
+    FILE *fp;
+    int file_size, nr_enfs;
+    fp = fopen(FILE_ENFERMEIROS, "r");
+    if(fp == NULL){
+        erro("S2) Não consegui ler o ficheiro FILE_ENFERMEIROS!");
+    }
+    fseek(fp, 0, SEEK_END);
+    file_size = ftell(fp); //obtém o tamanho do ficheiro
+    fseek(fp, 0, SEEK_SET);
+    nr_enfs = file_size/sizeof(Enfermeiro);
+    sucesso("S2) Ficheiro FILE_ENFERMEIROS tem %d bytes, ou seja, %d enfermeiros", file_size, nr_enfs);
+
+    fclose(fp);
+
+    return nr_enfs;
+}
+
+Enfermeiro* define_enfermeiros(){
+
+    //reservar espaço conforme o tamanho do ficheiro enfermeiros.dat
+    // o nº de enfermeiros (nr_enfs) será igual a file_size/sizeof(e)
+    FILE *fp;
+    fp = fopen(FILE_ENFERMEIROS,"r");
+    Enfermeiro e, *enfermeiros;
+    int nr_enfs = get_nr_enfs();
+    enfermeiros = (Enfermeiro *)malloc(sizeof(e) * nr_enfs); //***
+    if(enfermeiros == NULL){
+        printf("Null Pointer\n");
+        exit(1);
+    }
+    fread(enfermeiros, sizeof(e), nr_enfs, fp);
+    fclose(fp);
+    return enfermeiros;
+}
+
 void handle_sigusr1(int sig){
-    sucesso("S4) Servidor espera pedidos");
     FILE *f;
     f = fopen(FILE_PEDIDO_VACINA, "r");
 
@@ -37,18 +73,16 @@ void handle_sigusr1(int sig){
     char str_arr[7][20]; //cria array de strings para guardar campos
     int i = 0; //iterador
 
+    //guarda os campos no string de arrays str_arr
     while(delim != NULL){
-        //printf("%s\n", delim);
         strcpy(str_arr[i], delim);
         delim = strtok(NULL, ":");
         i++;
     }
 
+
     printf("Chegou o cidadão com o pedido no %s, com nº utente %s, para ser vacinado no Centro de Saúde CS%s\n", str_arr[6], str_arr[0], str_arr[3]);
     sucesso("S5.1) Dados Cidadão: %s; %s; %s; %s; %s; %s", str_arr[0],str_arr[1],str_arr[2], str_arr[3],str_arr[4],str_arr[5], str_arr[6]);
-    
-
-
 
 }
 
@@ -66,31 +100,7 @@ int main(){
         fprintf(svp,"%d",getpid());
         sucesso("S1) Escrevi no ficheiro FILE_PID_SERVIDOR o PID: %d", getpid());
     }
-
-    //reservar espaço conforme o tamanho do ficheiro enfermeiros.dat
-    // o nº de enfermeiros (nr_enfs) será igual a file_size/sizeof(e)
-
-    FILE *fp;
-    Enfermeiro e, *p;
-    int file_size, nr_enfs;
-    fp = fopen(FILE_ENFERMEIROS, "r");
-    if(fp == NULL){
-        erro("S2) Não consegui ler o ficheiro FILE_ENFERMEIROS!");
-    }
-    fseek(fp, 0, SEEK_END);
-    file_size = ftell(fp); //obtém o tamanho do ficheiro
-    fseek(fp, 0, SEEK_SET);
-    //printf("file_size is %d\n", file_size);
-    nr_enfs = file_size/sizeof(e);
-    //printf("nº de enfs: %d\n", nr_enfs);
-    sucesso("S2) Ficheiro FILE_ENFERMEIROS tem %d bytes, ou seja, %d enfermeiros", file_size, nr_enfs);
-    p = (Enfermeiro *)malloc(sizeof(e) * nr_enfs); //***
-    if(p == NULL){
-        printf("Null Pointer\n");
-        exit(1);
-    }
-    fread(p, sizeof(e), nr_enfs, fp);
-    fclose(fp);
+    Enfermeiro *e = define_enfermeiros();
 
     Vaga v[NUM_VAGAS];
     for(int i = 0; i < NUM_VAGAS; i++){
@@ -99,8 +109,8 @@ int main(){
     sucesso("S3) Iniciei a lista de %d vagas",NUM_VAGAS);
     
     signal(SIGUSR1, handle_sigusr1);
+    sucesso("S4) Servidor espera pedidos");
     pause();
-
 
 }
 

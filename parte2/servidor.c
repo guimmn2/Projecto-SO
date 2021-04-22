@@ -52,7 +52,9 @@ Enfermeiro* define_enfermeiros(){
     return enfermeiros;
 }
 
-void handle_sigusr1(int sig){
+Cidadao get_cidadao_data(){
+
+    Cidadao temp;
     FILE *f;
     f = fopen(FILE_PEDIDO_VACINA, "r");
 
@@ -70,7 +72,7 @@ void handle_sigusr1(int sig){
     char* delim; 
     delim = strtok(str, ":"); //define um delimitador ":"
 
-    char str_arr[7][20]; //cria array de strings para guardar campos
+    char str_arr[7][100]; //cria array de strings para guardar campos
     int i = 0; //iterador
 
     //guarda os campos no string de arrays str_arr
@@ -79,10 +81,25 @@ void handle_sigusr1(int sig){
         delim = strtok(NULL, ":");
         i++;
     }
+    temp.num_utente = atoi(str_arr[0]);
+    strcpy(temp.nome,str_arr[1]);
+    temp.idade = atoi(str_arr[2]);
+    strcpy(temp.localidade, str_arr[3]);
+    strcpy(temp.nr_telemovel, str_arr[4]);
+    temp.estado_vacinacao = atoi(str_arr[5]);
+    temp.PID_cidadao = atoi(str_arr[6]);
+    //printf("%s\n", str_arr[6]);
 
 
-    printf("Chegou o cidadão com o pedido no %s, com nº utente %s, para ser vacinado no Centro de Saúde CS%s\n", str_arr[6], str_arr[0], str_arr[3]);
-    sucesso("S5.1) Dados Cidadão: %s; %s; %s; %s; %s; %s", str_arr[0],str_arr[1],str_arr[2], str_arr[3],str_arr[4],str_arr[5], str_arr[6]);
+
+    return temp;
+}
+
+void handle_sigusr1(int sig){
+    
+    Cidadao temp = get_cidadao_data();
+    debug("C1) Dados Cidadão: %d; %s; %d; %s; %s; %d, %d", temp.num_utente, temp.nome, temp.idade, temp.localidade, temp.nr_telemovel, temp.estado_vacinacao, temp.PID_cidadao);
+    //printf("Chegou o cidadão com o pedido nº %d, com nº utente %d, para ser vacinado no Centro de Saúde CS%s\n",temp.PID_cidadao, temp.num_utente, temp.localidade);
 
 }
 
@@ -111,6 +128,8 @@ int main(){
     signal(SIGUSR1, handle_sigusr1);
     sucesso("S4) Servidor espera pedidos");
     pause();
+
+    
 
 }
 

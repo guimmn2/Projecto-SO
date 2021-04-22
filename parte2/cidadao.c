@@ -49,12 +49,12 @@ Cidadao novo_cidadao(){
     }
 
     void handle_sigusr2(int sig){
-        sucesso("C8) Vacinação do cidadão com o pedido no <PID Cidadão> concluída");
+        sucesso("C8) Vacinação do cidadão com o pedido no %d concluída", getpid());
         exit(0);
     }
 
     void handle_sigterm(int sig){
-        sucesso("C9) Não é possível vacinar o cidadão no pedido no <PID Cidadão>");
+        sucesso("C9) Não é possível vacinar o cidadão no pedido no %d", getpid());
         remove(FILE_PEDIDO_VACINA);
         exit(0);
     }
@@ -125,7 +125,6 @@ int main (){
             sucesso("C6) Sinal enviado ao Servidor: %d", sv_pid_value);
 
         }
-
-    
-
+        //COMO É QUE O CIDADAO.C FICA À ESPERA DE SINAIS?!?!??!
+        //pause();
 }

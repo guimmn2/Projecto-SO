@@ -150,9 +150,9 @@ int main(){
     
     Enfermeiro *e = define_enfermeiros();
 
-    Vaga v[NUM_VAGAS];
+    Vaga vagas[NUM_VAGAS];
     for(int i = 0; i < NUM_VAGAS; i++){
-        v[i].index_enfermeiro = -1;
+        vagas[i].index_enfermeiro = -1;
     }
     sucesso("S3) Iniciei a lista de %d vagas",NUM_VAGAS);
     
@@ -166,9 +166,23 @@ int main(){
         erro("S5.2.1) Enfermeiro %d indisponível para o pedido %d para o Centro de Saúde %s", index_enf, get_cidadao_data().PID_cidadao, get_cidadao_data().localidade);
         kill(get_cidadao_data().PID_cidadao,SIGTERM);
     } else {   
-    sucesso("S5.2.1) Enfermeiro %d disponível para o pedido %d", index_enf,get_cidadao_data().PID_cidadao);
+        sucesso("S5.2.1) Enfermeiro %d disponível para o pedido %d", index_enf,get_cidadao_data().PID_cidadao);
+        for(int i = 0; i < NUM_VAGAS; i++){
+            if(vagas->index_enfermeiro != -1){
+                kill(get_cidadao_data().PID_cidadao,SIGTERM); 
+                erro("S5.2.2) Não há vaga para vacinação para o pedido %d", get_cidadao_data().PID_cidadao);
+                goto waitsignal;
+            } else {
+                sucesso("S5.2.2) Há vaga para vacinação para o pedido %d", get_cidadao_data().PID_cidadao);
+                vagas[i].index_enfermeiro = index_enf;
+                e[i].disponibilidade = 0;
+                sucesso("Vaga nº %d preenchida para o pedido %d", i,get_cidadao_data().PID_cidadao);
+                break;
+            }
+        }
     }
     goto waitsignal; 
+
 
 
 }

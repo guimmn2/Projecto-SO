@@ -86,7 +86,7 @@ int main (){
         erro("C3) Não é possível iniciar o processo de vacinação neste momento");
         signal(SIGALRM, handle_sigalrm);
 
-        debug("%d\n", exists);
+//        debug("%d\n", exists);
 
         while(exists == 0){
             alarm(5);

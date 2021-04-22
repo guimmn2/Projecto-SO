@@ -15,6 +15,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+int index_enf;
+
 int get_nr_enfs(){
 
     FILE *fp;
@@ -90,6 +92,8 @@ Cidadao get_cidadao_data(){
     strcpy(temp.nr_telemovel, str_arr[4]);
     temp.estado_vacinacao = atoi(str_arr[5]);
     temp.PID_cidadao = atoi(str_arr[6]);
+    
+    fclose(f);
 
     return temp;
 }
@@ -106,28 +110,34 @@ int verifica_localidade(){
 
     for(int i = 0; i < nr_enfs; i++){
         //debug("%s\n",e[i].CS_enfermeiro);
-        //debug("nome: %s disp: %d\n", e[i].nome,e[i].disponibilidade);
-        if(strcmp(cs_temp,e[i].CS_enfermeiro) == 0 && e[i].disponibilidade == 1){
+        debug("index: %d nome: %s disp: %d local: %s\n", i,e[i].nome,e[i].disponibilidade, e[i].CS_enfermeiro);
+        debug("%s\n", cs_temp);
+        debug("%s\n",e[i].CS_enfermeiro);
+            debug("%d\n", index_enf);
+            index_enf = i;
+        if(!strcmp(cs_temp,e[i].CS_enfermeiro)){
+            if(e[i].disponibilidade == 1){
             is_available = 1;
+            break;
+            } 
         }
     }
         //debug("%d\n", is_available);
         is_available = 0;
         return is_available;
+    
 }
 
 void handle_sigusr1(int sig){
-    
     Cidadao temp = get_cidadao_data();
     printf("Chegou o cidadão com o pedido nº %d, com nº utente %d, para ser vacinado no Centro de Saúde CS%s\n",temp.PID_cidadao, temp.num_utente, temp.localidade);
-
 }
 
 
 int main(){
 
     FILE *svp;
-    svp = fopen(FILE_PID_SERVIDOR,"w"); //n adicionei condição if NULL, pois à partida não existem problemas de permissões
+    svp=fopen(FILE_PID_SERVIDOR,"w"); //n adicionei condição if NULL, pois à partida não existem problemas de permissões
 
     if(svp == NULL){
         erro("S1) Não consegui registar o servidor!");
@@ -135,6 +145,7 @@ int main(){
     }
      
     fprintf(svp,"%d",getpid());
+    fclose(svp);
     sucesso("S1) Escrevi no ficheiro FILE_PID_SERVIDOR o PID: %d", getpid());
     
     Enfermeiro *e = define_enfermeiros();
@@ -146,21 +157,18 @@ int main(){
     sucesso("S3) Iniciei a lista de %d vagas",NUM_VAGAS);
     
     signal(SIGUSR1, handle_sigusr1);
-    sucesso("S4) Servidor espera pedidos");
+    waitsignal: sucesso("S4) Servidor espera pedidos");
     pause();
 
     //verificar a disponibilidade de enfermeiro, se existir na localidade
-    if ( verifica_localidade() != 1){ 
-        // != 1, significa que não está disponível
+    if ( verifica_localidade() != 1 ){ 
+        //!= 1, significa que não está disps")
+        erro("S5.2.1) Enfermeiro %d indisponível para o pedido %d para o Centro de Saúde %s", index_enf, get_cidadao_data().PID_cidadao, get_cidadao_data().localidade);
         kill(get_cidadao_data().PID_cidadao,SIGTERM);
-        //debug("enviei o sinal!\n");
-    }    
-    pause(); //fica a espera de receber novos pedidos, ou seja outros sigusr1
-
+    } else {   
+    sucesso("S5.2.1) Enfermeiro %d disponível para o pedido %d", index_enf,get_cidadao_data().PID_cidadao);
+    }
+    goto waitsignal; 
 
 
 }
-
-
-
-

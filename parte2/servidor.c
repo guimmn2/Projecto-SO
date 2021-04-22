@@ -49,6 +49,7 @@ Enfermeiro* define_enfermeiros(){
     }
     fread(enfermeiros, sizeof(e), nr_enfs, fp);
     fclose(fp);
+
     return enfermeiros;
 }
 
@@ -81,25 +82,42 @@ Cidadao get_cidadao_data(){
         delim = strtok(NULL, ":");
         i++;
     }
-    temp.num_utente = atoi(str_arr[0]);
+    temp.num_utente = atoi(str_arr[0]); //passa as informações guardadas no array para o cidadao temporário
     strcpy(temp.nome,str_arr[1]);
     temp.idade = atoi(str_arr[2]);
     strcpy(temp.localidade, str_arr[3]);
     strcpy(temp.nr_telemovel, str_arr[4]);
     temp.estado_vacinacao = atoi(str_arr[5]);
     temp.PID_cidadao = atoi(str_arr[6]);
-    //printf("%s\n", str_arr[6]);
-
-
 
     return temp;
+}
+
+int verifica_localidade(){
+
+    Cidadao temp = get_cidadao_data(); //obtem dados acerca do cidadão
+    Enfermeiro *e = define_enfermeiros();
+    int nr_enfs = get_nr_enfs(); //obtem o nº de cidadãos
+    int is_available = 0; //parte do princípio que não existe = 0
+    char cs_temp[20] = "CS"; //adicionar CS para comparar strings com CS_enfmermeiro
+
+    strcat(cs_temp, temp.localidade);
+
+    for(int i = 0; i < nr_enfs; i++){
+        //debug("%s\n",e[i].CS_enfermeiro);
+        debug("nome: %s disp: %d\n", e[i].nome,e[i].disponibilidade);
+        if(strcmp(cs_temp,e[i].CS_enfermeiro) == 0 && e[i].disponibilidade == 1){
+            is_available = 1;
+        }
+    }
+        debug("%d\n", is_available);
+        return is_available;
 }
 
 void handle_sigusr1(int sig){
     
     Cidadao temp = get_cidadao_data();
-    debug("C1) Dados Cidadão: %d; %s; %d; %s; %s; %d, %d", temp.num_utente, temp.nome, temp.idade, temp.localidade, temp.nr_telemovel, temp.estado_vacinacao, temp.PID_cidadao);
-    //printf("Chegou o cidadão com o pedido nº %d, com nº utente %d, para ser vacinado no Centro de Saúde CS%s\n",temp.PID_cidadao, temp.num_utente, temp.localidade);
+    printf("Chegou o cidadão com o pedido nº %d, com nº utente %d, para ser vacinado no Centro de Saúde CS%s\n",temp.PID_cidadao, temp.num_utente, temp.localidade);
 
 }
 
@@ -129,7 +147,10 @@ int main(){
     sucesso("S4) Servidor espera pedidos");
     pause();
 
+    verifica_localidade();
     
+
+
 
 }
 

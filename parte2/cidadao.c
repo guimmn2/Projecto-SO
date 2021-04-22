@@ -84,7 +84,6 @@ int main (){
     FILE *f;
     f = fopen(FILE_PEDIDO_VACINA, "r");
 
-    //fazer a EXTRA-POINTS C10) !!!
     if ( f != NULL ){
         exists = 0;
         erro("C3) Não é possível iniciar o processo de vacinação neste momento");

@@ -44,7 +44,7 @@ Cidadao novo_cidadao(){
     }
 
     void handle_sigusr1(int sig){
-        sucesso("C7) Vacinação do cidadão com o pedido no %d em curso", sig);
+        sucesso("C7) Vacinação do cidadão com o pedido no %d em curso", getpid());
         remove(FILE_PEDIDO_VACINA);
     }
 
@@ -75,9 +75,6 @@ int main (){
     signal(SIGUSR2, handle_sigusr2);//quando a vacinação terminar
     signal(SIGTERM, handle_sigterm);//caso não seja possível realizar a vacinação
     
-    //para verificar se está tudo a funcionar minimamente bem por aqui...
-//   printf("%s %d %d %s %s %d\n",n.nome, n.num_utente,n.idade, n.nr_telemovel, n.localidade, n.PID_cidadao);
-
     Cidadao n = novo_cidadao(); //cria cidadão com o input do cliente
     sucesso("C2) PID Cidadão: %d", n.PID_cidadao);
 
@@ -103,6 +100,7 @@ int main (){
         fclose(f);
         }
         fprintf(f,"%d:%s:%d:%s:%s:%d:%d\n",n.num_utente, n.nome,n.idade, n.localidade, n.nr_telemovel, n.estado_vacinacao, n.PID_cidadao);
+        debug("cheguei aqui!");
         fclose(f);
         sucesso("C4) Ficheiro FILE_PEDIDO_VACINA criado e preenchido");
 

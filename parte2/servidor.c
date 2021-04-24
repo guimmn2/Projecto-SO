@@ -19,6 +19,9 @@ int index_enf;
 int vaga_index;
 Vaga vagas[NUM_VAGAS];
 Enfermeiro *e;
+int n_children = 0; 
+int children[100]; //limite para processos filhos = 100;
+int *vaga_filho_pointer;
 
 int get_nr_enfs(){
 
@@ -47,12 +50,12 @@ Enfermeiro* define_enfermeiros(){
     fp = fopen(FILE_ENFERMEIROS,"r");
     Enfermeiro *enfermeiros;
     int nr_enfs = get_nr_enfs();
-    enfermeiros = (Enfermeiro *)malloc(sizeof(e) * nr_enfs); //***
+    enfermeiros = (Enfermeiro *)malloc(sizeof(Enfermeiro) * nr_enfs); //***
     if(enfermeiros == NULL){
         printf("Null Pointer\n");
         exit(1);
     }
-    fread(enfermeiros, sizeof(e), nr_enfs, fp);
+    fread(enfermeiros, sizeof(Enfermeiro), nr_enfs, fp);
     fclose(fp);
 
     return enfermeiros;
@@ -140,22 +143,36 @@ void handle_sigchld(int sig){
     int temp_index = vagas[vaga_index].index_enfermeiro;
     vagas[vaga_index].index_enfermeiro = -1;
     sucesso("S5.5.3.1) Vaga %d que era do servidor dedicado %d libertada", vaga_index, vagas[vaga_index].PID_filho);
-    e[vaga_index].disponibilidade = 1;
+    e[temp_index].disponibilidade = 1;
     sucesso("S5.5.3.2)Enfermeiro %d atualizado para disponível", temp_index);
-    e[vaga_index].num_vac_dadas += 1;
-    sucesso("S5.5.3.3) Enfermeiro %d atualizado para %d vacinas dadas", vagas[vaga_index].index_enfermeiro, e[vaga_index].num_vac_dadas);
+    e[temp_index].num_vac_dadas += 1;
+    sucesso("S5.5.3.3) Enfermeiro %d atualizado para %d vacinas dadas", temp_index, e[temp_index].num_vac_dadas);
     FILE *f;
     f = fopen(FILE_ENFERMEIROS, "wb");
     if (f == NULL){
         printf("Null Pointer!\n");
         exit(1);
     }
-
-
-
-    
+    fseek(f, sizeof(Enfermeiro)*temp_index, SEEK_SET); //coloca ponteiro na linha do enfermeiro certo
+    fwrite(&e[temp_index], sizeof(Enfermeiro),1,f);
+    fseek(f,0,SEEK_SET); //pra voltar ao início
+    fclose(f);
+    sucesso("S5.5.3.4) Ficheiro FILE_ENFERMEIROS %d atualizado para %d vacinas dadas", temp_index, e[temp_index].num_vac_dadas);
+    sucesso("S5.5.3.5) Retorna");
 }
 
+void handle_sigterm(int sig){
+    kill(get_cidadao_data().PID_cidadao, SIGTERM);
+    sucesso("S5.6.1) SIGTERM recebido, servidor dedicado termina Cidadão");
+    exit(0);
+}
+
+void handle_sigint(int sig){
+    for(int i = 0; i < n_children; i++){
+        kill(children[i], SIGTERM);
+        exit(0);
+    }
+}
 
 
 int main(){
@@ -194,7 +211,7 @@ int main(){
         for(int i = 0; i < NUM_VAGAS; i++){
             debug("%d\n", vaga_index);  
             vaga_index = i;
-            if(vagas->index_enfermeiro != -1){
+            if(vagas[vaga_index].index_enfermeiro != -1){
                 kill(get_cidadao_data().PID_cidadao,SIGTERM); 
                 erro("S5.2.2) Não há vaga para vacinação para o pedido %d", get_cidadao_data().PID_cidadao);
                 goto waitsignal;
@@ -209,18 +226,36 @@ int main(){
         }
     }
 
-        int n = fork();
-        if(n < 0){
+        children[n_children] = fork();
+        if(children[n_children] < 0){
             erro("S5.4) Não foi possível criar o servidor dedicado");
-        } else if(n == 0) {
+            exit(1);
+        } 
+        if(children[n_children] == 0) {
+            //código do filho
             sucesso("S5.4) Servidor dedicado %d criado para o pedido %d", getpid(), get_cidadao_data().PID_cidadao);
-        }
-        
-        vagas[vaga_index].PID_filho = n; 
-        sucesso("S5.5.1) Servidor dedicado %d na vaga %d", n, vaga_index);
+            signal(SIGTERM, handle_sigterm);
+            kill(vagas[vaga_index].cidadao.PID_cidadao, SIGUSR1);
+            sucesso("S5.6.2) Servidor dedicado inicia consulta de vacinação");
+            sleep(TEMPO_CONSULTA);
+            sucesso("S5.6.3) Vacinação terminada para o cidadão com o pedido nº %d", get_cidadao_data().PID_cidadao);
+            kill(vagas[vaga_index].cidadao.PID_cidadao, SIGUSR2);
+            vaga_filho_pointer = &vaga_index;
+            exit(0);
+
+        } else {
+            //código do pai
+        n_children ++;
+        vagas[vaga_index].PID_filho = children[n_children]; 
+        sucesso("S5.5.1) Servidor dedicado %d na vaga %d", children[n_children], vaga_index);
 
         signal(SIGCHLD, handle_sigchld);
-       sucesso("S5.5.2) Servidor aguarda fim do servidor dedicado %d", n); 
+        sucesso("S5.5.2) Servidor aguarda fim do servidor dedicado %d", children[n_children]); 
+
+        signal(SIGINT, handle_sigint);
+
+        }
+        
         
     goto waitsignal; 
 

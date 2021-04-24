@@ -148,6 +148,7 @@ void handle_sigchld(int sig){
     }
     int temp_index = vagas[i].index_enfermeiro;
     vagas[i].index_enfermeiro = -1;
+    debug("%d ; %d", vagas[i].PID_filho, defunct_child);
     sucesso("S5.5.3.1) Vaga %d que era do servidor dedicado %d libertada", i, vagas[i].PID_filho);
     e[temp_index].disponibilidade = 1;
     sucesso("S5.5.3.2)Enfermeiro %d atualizado para disponível", temp_index);
@@ -251,12 +252,13 @@ int main(){
 
         } else {
             //código do pai
-        n_children ++;
         vagas[vaga_index].PID_filho = children[n_children]; 
+        debug("%d\n", vagas[vaga_index].PID_filho);
         sucesso("S5.5.1) Servidor dedicado %d na vaga %d", children[n_children], vaga_index);
 
         signal(SIGCHLD, handle_sigchld);
         sucesso("S5.5.2) Servidor aguarda fim do servidor dedicado %d", children[n_children]); 
+        n_children ++;
         goto waitsignal; 
 
         signal(SIGINT, handle_sigint);

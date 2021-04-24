@@ -137,10 +137,11 @@ void handle_sigusr1(int sig){
 }
 
 void handle_sigchld(int sig){
+    int temp_index = vagas[vaga_index].index_enfermeiro;
     vagas[vaga_index].index_enfermeiro = -1;
     sucesso("S5.5.3.1) Vaga %d que era do servidor dedicado %d libertada", vaga_index, vagas[vaga_index].PID_filho);
     e[vaga_index].disponibilidade = 1;
-    sucesso("S5.5.3.2)Enfermeiro %d atualizado para disponível", vagas[vaga_index].index_enfermeiro);
+    sucesso("S5.5.3.2)Enfermeiro %d atualizado para disponível", temp_index);
     e[vaga_index].num_vac_dadas += 1;
     sucesso("S5.5.3.3) Enfermeiro %d atualizado para %d vacinas dadas", vagas[vaga_index].index_enfermeiro, e[vaga_index].num_vac_dadas);
     FILE *f;
@@ -149,6 +150,7 @@ void handle_sigchld(int sig){
         printf("Null Pointer!\n");
         exit(1);
     }
+
 
 
     

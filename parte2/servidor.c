@@ -16,6 +16,7 @@
 #include <stdlib.h>
 
 int index_enf;
+int vaga_index;
 
 int get_nr_enfs(){
 
@@ -168,19 +169,32 @@ int main(){
     } else {   
         sucesso("S5.2.1) Enfermeiro %d disponível para o pedido %d", index_enf,get_cidadao_data().PID_cidadao);
         for(int i = 0; i < NUM_VAGAS; i++){
+            debug("%d\n", vaga_index);  
+            vaga_index = i;
             if(vagas->index_enfermeiro != -1){
                 kill(get_cidadao_data().PID_cidadao,SIGTERM); 
                 erro("S5.2.2) Não há vaga para vacinação para o pedido %d", get_cidadao_data().PID_cidadao);
                 goto waitsignal;
             } else {
                 sucesso("S5.2.2) Há vaga para vacinação para o pedido %d", get_cidadao_data().PID_cidadao);
-                vagas[i].index_enfermeiro = index_enf;
+                vagas[i].index_enfermeiro = index_enf; //preenche com o indice da lista de enfs
+                vagas[i].cidadao = get_cidadao_data(); //preenche com info do cidadão
                 e[i].disponibilidade = 0;
                 sucesso("Vaga nº %d preenchida para o pedido %d", i,get_cidadao_data().PID_cidadao);
                 break;
             }
         }
     }
+
+        int n = fork();
+        if(n < 0){
+            erro("S5.4) Não foi possível criar o servidor dedicado");
+        } else if(n == 0) {
+            sucesso("S5.4) Servidor dedicado %d criado para o pedido %d", getpid(), get_cidadao_data().PID_cidadao);
+        }
+        
+        vagas[vaga_index].PID_filho = n; 
+
     goto waitsignal; 
 
 

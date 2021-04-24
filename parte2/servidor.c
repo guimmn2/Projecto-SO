@@ -17,6 +17,8 @@
 
 int index_enf;
 int vaga_index;
+Vaga vagas[NUM_VAGAS];
+Enfermeiro *e;
 
 int get_nr_enfs(){
 
@@ -43,7 +45,7 @@ Enfermeiro* define_enfermeiros(){
     // o nº de enfermeiros (nr_enfs) será igual a file_size/sizeof(e)
     FILE *fp;
     fp = fopen(FILE_ENFERMEIROS,"r");
-    Enfermeiro e, *enfermeiros;
+    Enfermeiro *enfermeiros;
     int nr_enfs = get_nr_enfs();
     enfermeiros = (Enfermeiro *)malloc(sizeof(e) * nr_enfs); //***
     if(enfermeiros == NULL){
@@ -102,7 +104,7 @@ Cidadao get_cidadao_data(){
 int verifica_localidade(){
 
     Cidadao temp = get_cidadao_data(); //obtem dados acerca do cidadão
-    Enfermeiro *e = define_enfermeiros();
+    e = define_enfermeiros();
     int nr_enfs = get_nr_enfs(); //obtem o nº de cidadãos
     int is_available = 0; //parte do princípio que não existe = 0
     char cs_temp[20] = "CS"; //adicionar CS para comparar strings com CS_enfmermeiro
@@ -134,6 +136,25 @@ void handle_sigusr1(int sig){
     printf("Chegou o cidadão com o pedido nº %d, com nº utente %d, para ser vacinado no Centro de Saúde CS%s\n",temp.PID_cidadao, temp.num_utente, temp.localidade);
 }
 
+void handle_sigchld(int sig){
+    vagas[vaga_index].index_enfermeiro = -1;
+    sucesso("S5.5.3.1) Vaga %d que era do servidor dedicado %d libertada", vaga_index, vagas[vaga_index].PID_filho);
+    e[vaga_index].disponibilidade = 1;
+    sucesso("S5.5.3.2)Enfermeiro %d atualizado para disponível", vagas[vaga_index].index_enfermeiro);
+    e[vaga_index].num_vac_dadas += 1;
+    sucesso("S5.5.3.3) Enfermeiro %d atualizado para %d vacinas dadas", vagas[vaga_index].index_enfermeiro, e[vaga_index].num_vac_dadas);
+    FILE *f;
+    f = fopen(FILE_ENFERMEIROS, "wb");
+    if (f == NULL){
+        printf("Null Pointer!\n");
+        exit(1);
+    }
+
+
+    
+}
+
+
 
 int main(){
 
@@ -149,7 +170,7 @@ int main(){
     fclose(svp);
     sucesso("S1) Escrevi no ficheiro FILE_PID_SERVIDOR o PID: %d", getpid());
     
-    Enfermeiro *e = define_enfermeiros();
+    e = define_enfermeiros(); //Muda var global Enfermeiro *e
 
     Vaga vagas[NUM_VAGAS];
     for(int i = 0; i < NUM_VAGAS; i++){
@@ -194,7 +215,11 @@ int main(){
         }
         
         vagas[vaga_index].PID_filho = n; 
+        sucesso("S5.5.1) Servidor dedicado %d na vaga %d", n, vaga_index);
 
+        signal(SIGCHLD, handle_sigchld);
+       sucesso("S5.5.2) Servidor aguarda fim do servidor dedicado %d", n); 
+        
     goto waitsignal; 
 
 

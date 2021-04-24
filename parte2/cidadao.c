@@ -125,6 +125,8 @@ int main (){
             sucesso("C6) Sinal enviado ao Servidor: %d", sv_pid_value);
 
         }
-        //COMO É QUE O CIDADAO.C FICA À ESPERA DE SINAIS?!?!??!
-        //pause();
+        while(1){
+            sucesso("processing...");
+            pause();
+        }
 }

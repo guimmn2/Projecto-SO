@@ -48,14 +48,14 @@ Enfermeiro* define_enfermeiros(){
     // o nº de enfermeiros (nr_enfs) será igual a file_size/sizeof(e)
     FILE *fp;
     fp = fopen(FILE_ENFERMEIROS,"r");
-    Enfermeiro *enfermeiros;
+    Enfermeiro e, *enfermeiros;
     int nr_enfs = get_nr_enfs();
-    enfermeiros = (Enfermeiro *)malloc(sizeof(Enfermeiro) * nr_enfs); //***
+    enfermeiros = (Enfermeiro *)malloc(sizeof(e) * nr_enfs); //***
     if(enfermeiros == NULL){
         printf("Null Pointer\n");
         exit(1);
     }
-    fread(enfermeiros, sizeof(Enfermeiro), nr_enfs, fp);
+    fread(enfermeiros, sizeof(e), nr_enfs, fp);
     fclose(fp);
 
     return enfermeiros;
@@ -129,7 +129,6 @@ int verifica_localidade(){
         }
     }
         //debug("%d\n", is_available);
-        is_available = 0;
         return is_available;
     
 }
@@ -145,10 +144,10 @@ void handle_sigchld(int sig){
     sucesso("S5.5.3.1) Vaga %d que era do servidor dedicado %d libertada", vaga_index, vagas[vaga_index].PID_filho);
     e[temp_index].disponibilidade = 1;
     sucesso("S5.5.3.2)Enfermeiro %d atualizado para disponível", temp_index);
-    e[temp_index].num_vac_dadas += 1;
+    e[temp_index].num_vac_dadas ++;
     sucesso("S5.5.3.3) Enfermeiro %d atualizado para %d vacinas dadas", temp_index, e[temp_index].num_vac_dadas);
     FILE *f;
-    f = fopen(FILE_ENFERMEIROS, "wb");
+    f = fopen(FILE_ENFERMEIROS, "r+b");
     if (f == NULL){
         printf("Null Pointer!\n");
         exit(1);
@@ -231,16 +230,15 @@ int main(){
             erro("S5.4) Não foi possível criar o servidor dedicado");
             exit(1);
         } 
-        if(children[n_children] == 0) {
+        if(children[n_children - 1] == 0) {
             //código do filho
-            sucesso("S5.4) Servidor dedicado %d criado para o pedido %d", getpid(), get_cidadao_data().PID_cidadao);
+            sucesso("S5.4) Servidor dedicado %d criado para o pedido %d", getpid(), vagas[vaga_index].cidadao.PID_cidadao);
             signal(SIGTERM, handle_sigterm);
             kill(vagas[vaga_index].cidadao.PID_cidadao, SIGUSR1);
             sucesso("S5.6.2) Servidor dedicado inicia consulta de vacinação");
             sleep(TEMPO_CONSULTA);
-            sucesso("S5.6.3) Vacinação terminada para o cidadão com o pedido nº %d", get_cidadao_data().PID_cidadao);
+            sucesso("S5.6.3) Vacinação terminada para o cidadão com o pedido nº %d", vagas[vaga_index].cidadao.PID_cidadao);
             kill(vagas[vaga_index].cidadao.PID_cidadao, SIGUSR2);
-            vaga_filho_pointer = &vaga_index;
             exit(0);
 
         } else {

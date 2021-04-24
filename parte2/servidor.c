@@ -22,6 +22,7 @@ Enfermeiro *e;
 int n_children = 0; 
 int children[100]; //limite para processos filhos = 100;
 int *vaga_filho_pointer;
+int received = 0;
 
 int get_nr_enfs(){
 
@@ -134,6 +135,7 @@ int verifica_localidade(){
 }
 
 void handle_sigusr1(int sig){
+    received = 1;
     Cidadao temp = get_cidadao_data();
     printf("Chegou o cidadão com o pedido nº %d, com nº utente %d, para ser vacinado no Centro de Saúde CS%s\n",temp.PID_cidadao, temp.num_utente, temp.localidade);
 }
@@ -197,8 +199,10 @@ int main(){
     sucesso("S3) Iniciei a lista de %d vagas",NUM_VAGAS);
     
     signal(SIGUSR1, handle_sigusr1);
-    waitsignal: sucesso("S4) Servidor espera pedidos");
-    pause();
+    waitsignal: while(received == 0){
+                    sucesso("S4) Servidor espera pedidos");
+                    pause();
+    } received = 0;
 
     //verificar a disponibilidade de enfermeiro, se existir na localidade
     if ( verifica_localidade() != 1 ){ 
@@ -210,19 +214,18 @@ int main(){
         for(int i = 0; i < NUM_VAGAS; i++){
             debug("%d\n", vaga_index);  
             vaga_index = i;
-            if(vagas[vaga_index].index_enfermeiro != -1){
-                kill(get_cidadao_data().PID_cidadao,SIGTERM); 
-                erro("S5.2.2) Não há vaga para vacinação para o pedido %d", get_cidadao_data().PID_cidadao);
-                goto waitsignal;
-            } else {
+            if(vagas[vaga_index].index_enfermeiro == -1){
                 sucesso("S5.2.2) Há vaga para vacinação para o pedido %d", get_cidadao_data().PID_cidadao);
-                vagas[i].index_enfermeiro = index_enf; //preenche com o indice da lista de enfs
-                vagas[i].cidadao = get_cidadao_data(); //preenche com info do cidadão
-                e[i].disponibilidade = 0;
+                vagas[vaga_index].index_enfermeiro = index_enf; //preenche com o indice da lista de enfs
+                vagas[vaga_index].cidadao = get_cidadao_data(); //preenche com info do cidadão
+                e[vaga_index].disponibilidade = 0;
                 sucesso("Vaga nº %d preenchida para o pedido %d", i,get_cidadao_data().PID_cidadao);
                 break;
             }
         }
+                erro("S5.2.2) Não há vaga para vacinação para o pedido %d", get_cidadao_data().PID_cidadao);
+                kill(get_cidadao_data().PID_cidadao,SIGTERM); 
+                goto waitsignal;
     }
 
         children[n_children] = fork();
@@ -249,14 +252,9 @@ int main(){
 
         signal(SIGCHLD, handle_sigchld);
         sucesso("S5.5.2) Servidor aguarda fim do servidor dedicado %d", children[n_children]); 
+        goto waitsignal; 
 
         signal(SIGINT, handle_sigint);
 
         }
-        
-        
-    goto waitsignal; 
-
-
-
 }

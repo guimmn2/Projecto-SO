@@ -115,11 +115,8 @@ int main (){
 
         } else {
 
-            //por alguma razão aqui espera que eu carregue no enter para tentar abrir o servidor.pid ???
-            my_fgets(sv_pid, 5, sp);
-            //printf("%s\n", sv_pid);
+            my_fgets(sv_pid, 100, sp);
             int sv_pid_value = atoi(sv_pid); //converter de string para int
-            //printf("%d\n", sv_pid_value);
             fclose(sp);
             kill(sv_pid_value,SIGUSR1);
             sucesso("C6) Sinal enviado ao Servidor: %d", sv_pid_value);

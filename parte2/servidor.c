@@ -14,6 +14,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 
 int index_enf;
 int vaga_index;
@@ -21,7 +22,6 @@ Vaga vagas[NUM_VAGAS];
 Enfermeiro *e;
 int n_children = 0; 
 int children[100]; //limite para processos filhos = 100;
-int *vaga_filho_pointer;
 int received = 0;
 
 int get_nr_enfs(){
@@ -141,9 +141,14 @@ void handle_sigusr1(int sig){
 }
 
 void handle_sigchld(int sig){
-    int temp_index = vagas[vaga_index].index_enfermeiro;
-    vagas[vaga_index].index_enfermeiro = -1;
-    sucesso("S5.5.3.1) Vaga %d que era do servidor dedicado %d libertada", vaga_index, vagas[vaga_index].PID_filho);
+    int defunct_child = wait(NULL);
+    int i;
+    for(i = 0; i < NUM_VAGAS; i++){
+        if(vagas[i].PID_filho == defunct_child) break;
+    }
+    int temp_index = vagas[i].index_enfermeiro;
+    vagas[i].index_enfermeiro = -1;
+    sucesso("S5.5.3.1) Vaga %d que era do servidor dedicado %d libertada", i, vagas[i].PID_filho);
     e[temp_index].disponibilidade = 1;
     sucesso("S5.5.3.2)Enfermeiro %d atualizado para disponível", temp_index);
     e[temp_index].num_vac_dadas ++;
@@ -220,7 +225,7 @@ int main(){
                 vagas[vaga_index].cidadao = get_cidadao_data(); //preenche com info do cidadão
                 e[vaga_index].disponibilidade = 0;
                 sucesso("Vaga nº %d preenchida para o pedido %d", i,get_cidadao_data().PID_cidadao);
-                break;
+                goto existevaga;
             }
         }
                 erro("S5.2.2) Não há vaga para vacinação para o pedido %d", get_cidadao_data().PID_cidadao);
@@ -228,12 +233,12 @@ int main(){
                 goto waitsignal;
     }
 
-        children[n_children] = fork();
+        existevaga: children[n_children] = fork();
         if(children[n_children] < 0){
             erro("S5.4) Não foi possível criar o servidor dedicado");
             exit(1);
         } 
-        if(children[n_children - 1] == 0) {
+        if(children[n_children] == 0) {
             //código do filho
             sucesso("S5.4) Servidor dedicado %d criado para o pedido %d", getpid(), vagas[vaga_index].cidadao.PID_cidadao);
             signal(SIGTERM, handle_sigterm);

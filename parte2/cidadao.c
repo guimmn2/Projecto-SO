@@ -18,6 +18,7 @@
 int exists; //flag para sigalarm
 
 Cidadao novo_cidadao(){
+    //Devolve cidadão novo 'n' e grava informações obtidas no input do cliente
     Cidadao n;
 
     printf("Nº de utente: ");
@@ -38,7 +39,7 @@ Cidadao novo_cidadao(){
     return n;
 }
     void signal_cancel(int sig){
-        sucesso("C5) O cidadão cancelou a vacinação, o pedido no <PID> foi cancelado");
+        sucesso("C5) O cidadão cancelou a vacinação, o pedido no %d foi cancelado",getpid());
         remove(FILE_PEDIDO_VACINA);
         exit(0);
     }
@@ -60,9 +61,9 @@ Cidadao novo_cidadao(){
     }
 
     void handle_sigalrm(int sig){
+        //se o ficheiro não existir levanta a flag, ou seja muda var global 'exists' para 1
         if(!fopen(FILE_PEDIDO_VACINA, "r")){
             exists = 1;
-            debug("%d\n", exists);
         }
     }
 
@@ -75,7 +76,7 @@ int main (){
     signal(SIGUSR2, handle_sigusr2);//quando a vacinação terminar
     signal(SIGTERM, handle_sigterm);//caso não seja possível realizar a vacinação
     
-    Cidadao n = novo_cidadao(); //cria cidadão com o input do cliente
+    Cidadao n = novo_cidadao(); //cria cidadão com o input do cliente, usando a função novo_cidadão()
     sucesso("C2) PID Cidadão: %d", n.PID_cidadao);
 
     FILE *f;
@@ -86,9 +87,10 @@ int main (){
         erro("C3) Não é possível iniciar o processo de vacinação neste momento");
         signal(SIGALRM, handle_sigalrm);
 
-//        debug("%d\n", exists);
 
         while(exists == 0){
+            //enquanto o ficheiro existe o cidadao aguarda que o ficheiro deixe de existir
+            //para depois correr o handler do sigalrm (quando a var existe = 1)
             alarm(5);
             pause();
         }
@@ -99,8 +101,8 @@ int main (){
         erro("C4) Não é possível criar o ficheiro FILE_PEDIDO_VACINA");
         fclose(f);
         }
+        //escrever informações do cidadao no pedidovacina.txt
         fprintf(f,"%d:%s:%d:%s:%s:%d:%d\n",n.num_utente, n.nome,n.idade, n.localidade, n.nr_telemovel, n.estado_vacinacao, n.PID_cidadao);
-        debug("cheguei aqui!");
         fclose(f);
         sucesso("C4) Ficheiro FILE_PEDIDO_VACINA criado e preenchido");
 
@@ -115,6 +117,7 @@ int main (){
 
         } else {
 
+            //encontrando o ficheiro servidor.pid lê o pid do servidor e guarda em sv_pid_value
             my_fgets(sv_pid, 100, sp);
             int sv_pid_value = atoi(sv_pid); //converter de string para int
             fclose(sp);
@@ -123,7 +126,7 @@ int main (){
 
         }
         while(1){
-            sucesso("processing...");
+            sucesso("aguarda sinais...");
             pause();
         }
 }

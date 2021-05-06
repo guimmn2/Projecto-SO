@@ -1,4 +1,0 @@
-Daniela Pereira:00123:Joaquim Pedroso:10003:CSPorto:2021-03-13
-Daniela Pereira:00123:Ana Silva:10004:CSPorto:2021-03-13
-Daniela Pereira:00123:Carla Braga:10010:CSPorto:2021-03-13
-Daniela Pereira:00123:Ema Aguiar:10013:CSPorto:2021-03-13

@@ -57,6 +57,15 @@ void init_ipc() {
     // exit_on_error(<var>, "init_ipc) Fila de Mensagens com a Key definida não existe ou não pode ser aberta");
     // sucesso("C1) Fila de Mensagens com a Key %x aberta com o ID %d", IPC_KEY, msg_id);
 
+    msg_id = msgget(IPC_KEY, 666);
+    if(msg_id < 0){
+        erro("init_ipc) Fila de Mensagens com a Key definida não existe ou não pode ser aberta");
+        exit_on_error(msg_id, "init_ipc");
+    }
+    else { 
+        sucesso("C1) Fila de Mensagens com a Key %x aberta com o ID %d", IPC_KEY, msg_id);
+    }
+
     debug(">");
 }
 
@@ -70,6 +79,14 @@ void cria_mensagem() {
     // C2.1) Pede ao Cidadão (utilizador) os seus dados, nomeadamente o número de utente e nome, obrigatoriamente nessa ordem, preenchendo os dados na variável global mensagem;
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("C2.1) Dados Cidadão: %d, %s", <num_utente>, <nome>);
+
+    printf("Insira o seu nº de utente: ");
+    scanf("%d", &mensagem.dados.num_utente);
+
+    printf("Insira o seu nome: ");
+    my_gets(mensagem.dados.nome, 100);
+
+    sucesso("C2.1) Dados Cidadão: %d, %s", mensagem.dados.num_utente, mensagem.dados.nome);
 
     debug(".");
     // C2.2) Preenche os campos PID_cidadao da variável global mensagem com o PID deste processo Cidadão, tipo da mensagem com o tipo 1, e pedido = PEDIDO;

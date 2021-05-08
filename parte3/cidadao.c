@@ -2,7 +2,7 @@
  ** ISCTE-IUL: Trabalho prático 3 de Sistemas Operativos
  **
  ** Aluno: Nº:       Nome: 
- ** Nome do Módulo: cidadao.c v2
+ ** Nome do Módulo: cidadao.c v3
  ** Descrição/Explicação do Módulo: 
  **
  **
@@ -10,6 +10,8 @@
 #include "common.h"
 #include "utils.h"
 #include <signal.h>
+#include <unistd.h>
+#include <sys/msg.h>
 
 /* Variáveis globais */
 int msg_id;             // ID da Fila de Mensagens usada
@@ -22,6 +24,7 @@ void cria_mensagem();               // Função a ser implementada pelos alunos
 void envia_mensagem_servidor();     // Função a ser implementada pelos alunos
 void espera_resposta_servidor();    // Função a ser implementada pelos alunos
 void trata_resposta_servidor();     // Função a ser implementada pelos alunos
+void pedido();                      // Função a ser implementada pelos alunos
 void vacina();                      // Função a ser implementada pelos alunos
 void cancela_pedido(int);           // Função a ser implementada pelos alunos
 void print_info(Cidadao cidadao);
@@ -31,14 +34,10 @@ int main() {    // Não é suposto que os alunos alterem nada na função main()
     init_ipc();
     // C2) Chama a função cria_mensagem()
     cria_mensagem();
-    // C3) Envia um pedido de consulta de vacinação para o processo Servidor, chamando a função envia_mensagem_servidor(), que envia uma mensagem para a fila de mensagens com tipo 1, com pedido = PEDIDO e os dados do cidadão; em caso de erro, termina com erro e exit status 1.
-    envia_mensagem_servidor();
-    // C7) Arma e trata o sinal SIGINT (só pode acontecer depois do passo C3) para que, quando o utilizador interromper o processo Cidadão com <CTRL+C>, chame a função cancela_pedido()
+    // C7) Arma e trata o sinal SIGINT para que, quando o utilizador interromper o processo Cidadão com <CTRL+C>, chame a função cancela_pedido()
     signal(SIGINT, cancela_pedido);
-    // C4) Chama a função espera_resposta_servidor(), que espera a resposta do processo Servidor (na fila de mensagens com o tipo = PID_Cidadao) e preenche a mensagem enviada pelo processo Servidor na variável global resposta; em caso de erro, termina com erro e exit status 1.
-    espera_resposta_servidor();
-    // C5) O comportamento do processo Cidadão agora irá depender da resposta enviada pelo processo Servidor no campo status:
-    trata_resposta_servidor();
+    // Faz o pedido ao servidor e aguarda a resposta do mesmo
+    pedido();
     // C6) Inicia o processo de vacinação
     vacina();
 }
@@ -54,7 +53,7 @@ void init_ipc() {
     debug("<");
 
     // Outputs esperados (os itens entre <> deverão ser substituídos pelos valores correspondentes):
-    // exit_on_error(<var>, "init_ipc) Fila de Mensagens com a Key definida não existe ou não pode ser aberta");
+    // exit_on_error(<var>, "C1) Fila de Mensagens com a Key definida não existe ou não pode ser aberta");
     // sucesso("C1) Fila de Mensagens com a Key %x aberta com o ID %d", IPC_KEY, msg_id);
 
     debug(">");
@@ -71,7 +70,6 @@ void cria_mensagem() {
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("C2.1) Dados Cidadão: %d, %s", <num_utente>, <nome>);
 
-    debug(".");
     // C2.2) Preenche os campos PID_cidadao da variável global mensagem com o PID deste processo Cidadão, tipo da mensagem com o tipo 1, e pedido = PEDIDO;
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("C2.2) PID Cidadão: %d", <PID_Cidadao>);
@@ -85,7 +83,7 @@ void cria_mensagem() {
 void envia_mensagem_servidor() {
     debug("<");
 
-    // C3) Envia uma mensagem para a fila de mensagens com tipo 1, com pedido = PEDIDO e os dados do cidadão; em caso de erro, termina com erro e exit status 1.
+    // Envia a mensagem que está na variável global mensagem para a fila de mensagens; em caso de erro, termina com erro e exit status 1.
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // exit_on_error(<var>, "Não é possível enviar mensagem para o servidor");
     // sucesso("Mensagem para o servidor enviada");
@@ -108,34 +106,43 @@ void espera_resposta_servidor() {
 }
 
 /**
- * C5) Trata a resposta do processo Servidor, usando a variável global resposta
+ * Envia o pedido ao servidor e aguarda a sua resposta
  */
-void trata_resposta_servidor() {
+void pedido() {
     debug("<");
 
-    // C5.1) Se o estado for DESCONHECIDO, imprime uma mensagem de erro, e termina com exit status 1;
-    // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
-    // erro("C5.1) Não existe registo do utente %d, %s", <num_utente>, <nome>);
+    // do {
+        // C3) Envia um pedido de consulta de vacinação para o processo Servidor, chamando a função envia_mensagem_servidor(), que envia uma mensagem para a fila de mensagens com tipo 1, com pedido = PEDIDO e os dados do cidadão; em caso de erro, termina com erro e exit status 1.
+        envia_mensagem_servidor();
+        // C4) Chama a função espera_resposta_servidor(), que espera a resposta do processo Servidor (na fila de mensagens com o tipo = PID_Cidadao) e preenche a mensagem enviada pelo processo Servidor na variável global resposta; em caso de erro, termina com erro e exit status 1.
+        espera_resposta_servidor();
 
-    debug(".");
-    // C5.2) Se o estado for VACINADO, imprime uma mensagem de sucesso, e termina com exit status 0;
-    // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
-    // sucesso("C5.2) O utente %d, %s foi vacinado", <num_utente>, <nome>);
+        // C5) O comportamento do processo Cidadão agora irá depender da resposta enviada pelo processo Servidor no campo status:
 
-    debug(".");
-    // C5.3) Se o estado for EMCURSO, imprime uma mensagem de sucesso, e termina com exit status 0;
-    // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
-    // sucesso("C5.3) A vacinação do utente %d, %s já está em curso", <num_utente>, <nome>);
+        // C5.1) Se o status for DESCONHECIDO, imprime uma mensagem de erro, e termina com exit status 1;
+        // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
+        // erro("C5.1) Não existe registo do utente %d, %s", <num_utente>, <nome>);
 
-    debug(".");
-    // C5.4) Se o estado for AGUARDAR, imprime uma mensagem de sucesso, aguarda (sem espera ativa!) um tempo correspondente a TEMPO_ESPERA segundos, e depois retorna ao ponto C3;
-    // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
-    // sucesso("C5.4) Utente %d, %s, por favor aguarde...", <num_utente>, <nome>);
+        // C5.1) Se o status for NAOHAENFERMEIRO, imprime uma mensagem de erro, e termina com exit status 1;
+        // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
+        // erro("C5.1) Não existe enfermeiro na localidade do utente %d, %s", <num_utente>, <nome>);
 
-    debug(".");
-    // C5.5) Se o estado for OK, imprime uma mensagem de sucesso, e depois vai para o ponto C6.
-    // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
-    // sucesso("C5.5) Utente %d, %s, vai agora ser vacinado", <num_utente>, <nome>);
+        // C5.2) Se o status for VACINADO, imprime uma mensagem de sucesso, e termina com exit status 0;
+        // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
+        // sucesso("C5.2) O utente %d, %s já foi vacinado", <num_utente>, <nome>);
+
+        // C5.2) Se o status for EMCURSO, imprime uma mensagem de sucesso, e termina com exit status 0;
+        // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
+        // sucesso("C5.3) A vacinação do utente %d, %s já está em curso", <num_utente>, <nome>);
+
+        // C5.3) Se o status for AGUARDAR, imprime uma mensagem de sucesso, aguarda (sem espera ativa!) um tempo correspondente a TEMPO_ESPERA segundos, e depois retorna ao ponto C3;
+        // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
+        // sucesso("C5.4) Utente %d, %s, por favor aguarde...", <num_utente>, <nome>);
+
+        // C5.4) Se o status for OK, imprime uma mensagem de sucesso, e depois vai para o ponto C6.
+        // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
+        // sucesso("C5.5) Utente %d, %s, vai agora ser vacinado", <num_utente>, <nome>);
+    // } while (OK != <status>);
 
     debug(">");
 }
@@ -170,11 +177,11 @@ void vacina() {
 
     // C6.3) O comportamento do processo Cidadão agora irá depender da resposta enviada pelo processo Servidor no campo status:
 
-    // C6.3.1) Se o estado for OK, imprime uma mensagem de sucesso, e termina com exit status 0;
+    // C6.3.1) Se o status for TERMINADA, imprime uma mensagem de sucesso, e termina com exit status 0;
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("C6.3.1) Utente %d, %s vacinado com sucesso", <num_utente>, <nome>);
 
-    // C6.3.2) Se o estado não for OK, imprime uma mensagem de erro, e termina com exit status 1;
+    // C6.3.2) Se o status for CANCELADA, imprime uma mensagem de erro, e termina com exit status 1;
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // erro("C6.3.2) O servidor cancelou a vacinação em curso");
 
@@ -182,13 +189,7 @@ void vacina() {
 }
 
 /**
- * C7) Quando o utilizador interromper o processo Cidadão com <CTRL+C>:
- * C7.1) Escreve no ecrã uma mensagem;
- * C7.2) Envia para o processo Servidor uma mensagem (com o tipo 1), com pedido = CANCELAMENTO e os dados do cidadão;
- * C7.3) Chama novamente a função espera_resposta_servidor(), que espera uma nova resposta do processo Servidor (na fila de mensagens com o tipo = PID_Cidadao) e preenche a mensagem enviada pelo processo Servidor na variável global resposta;
- * C7.4) O comportamento do processo Cidadão agora irá depender da resposta enviada pelo processo Servidor no campo status:
- * C7.4.1) Se o estado for CANCEL, imprime uma mensagem de erro, e termina com exit status 1;
- * C7.4.2) Se o estado for TERMINADA, imprime mensagem sucesso, termina com exit status 0;
+ * C7) Quando o utilizador interromper o processo Cidadão com <CTRL+C>
  */
 void cancela_pedido(int sinal) {
     debug("<");
@@ -197,24 +198,19 @@ void cancela_pedido(int sinal) {
     // Outputs esperados (os itens entre <> deverão ser substituídos pelos valores correspondentes):
     // sucesso("C7.1) O cidadão cancelou a vacinação no processo %d", <PID_Cidadao>);
 
-    debug(".");
     // C7.2) Altera a variável global mensagem, tornando pedido = CANCELAMENTO. Chama a função envia_mensagem_servidor(), que envia a mensagem para a fila de mensagens; em caso de erro no envio, afixa uma mensagem de erro e termina com exit status 1;
     envia_mensagem_servidor();
 
-    debug(".");
     // C7.3) Chama novamente a função espera_resposta_servidor(), que espera uma nova resposta do processo Servidor (na fila de mensagens com o tipo = PID_Cidadao) e preenche a mensagem enviada pelo processo Servidor na variável global resposta;
     espera_resposta_servidor();
 
-    debug(".");
     // C7.4) O comportamento do processo Cidadão agora irá depender da resposta enviada pelo processo Servidor no campo status:
 
-    debug(".");
-    // C7.4.1) Se o estado for CANCEL, imprime uma mensagem de sucesso, e termina com exit status 0;
+    // C7.4.1) Se o status for CANCELADA, imprime uma mensagem de sucesso, e termina com exit status 0;
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("C7.4.1) Servidor confirmou cancelamento");
 
-    debug(".");
-    // C7.4.2) Se o estado for TERMINADA, imprime mensagem sucesso, termina com exit status 0;
+    // C7.4.2) Se o status for TERMINADA, imprime mensagem sucesso, termina com exit status 0;
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("C7.4.2) A vacinação já tinha sido concluída");
 

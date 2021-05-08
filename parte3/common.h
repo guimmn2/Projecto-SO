@@ -66,12 +66,12 @@ typedef struct {                // Estrutura utilizada para envio de mensagens p
 
 typedef enum {                  // Enumerado com valores possíveis para os estados do servidor:
     OK,                         // Indica que o pedido de vacinação foi aceite 
-    CANCEL,                     // Indica que o pedido de cancelamento de vacinação foi aceite
     AGUARDAR,                   // Indica que o pedido tem de ser repetido mais tarde (ou enfermeiro indisponível ou não há vaga)
     DESCONHECIDO,               // Indica que o pedido foi realizado com um num_utente não encontrado na BD de Cidadaos
     VACINADO,                   // Indica que o pedido foi rejeitado porque o cidadão já levou as 2 doses de vacina
     EMCURSO,                    // Indica que o pedido foi rejeitado porque já há outra consulta de vacinação em curso para esse cidadão
     NAOHAENFERMEIRO,            // Indica que o centro de saúde desse cidadão não tem nenhum enfermeiro registado ou o próprio centro de saúde não existe
+    CANCELADA,                  // Indica que a sessão de vacinação foi cancelada
     TERMINADA                   // Indica que a sessão de vacinação terminou
 } StatusServidor;
 

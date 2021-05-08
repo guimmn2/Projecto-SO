@@ -131,6 +131,7 @@ void espera_resposta_servidor() {
     int status;
     MsgServidor m; //instancia um struct MsgServidor para guardar a resposta do servidor
 
+    printf("%d\n", mensagem.dados.PID_cidadao);
     status = msgrcv(msg_id, &m, sizeof(m), mensagem.dados.PID_cidadao,0);
     //aqui no 1º parâmetro do EOE perguntar ao prof se é para por o status ou o valor 1
     exit_on_error(status,"Não é possível ler a resposta do servidor");
@@ -153,7 +154,7 @@ void pedido() {
 
     // do {
         // C3) Envia um pedido de consulta de vacinação para o processo Servidor, chamando a função envia_mensagem_servidor(), que envia uma mensagem para a fila de mensagens com tipo 1, com pedido = PEDIDO e os dados do cidadão; em caso de erro, termina com erro e exit status 1.
-        envia_mensagem_servidor();
+        C3: envia_mensagem_servidor();
         // C4) Chama a função espera_resposta_servidor(), que espera a resposta do processo Servidor (na fila de mensagens com o tipo = PID_Cidadao) e preenche a mensagem enviada pelo processo Servidor na variável global resposta; em caso de erro, termina com erro e exit status 1.
         espera_resposta_servidor();
 
@@ -163,29 +164,59 @@ void pedido() {
         // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
         // erro("C5.1) Não existe registo do utente %d, %s", <num_utente>, <nome>);
 
+
+        //aqui n sei se terei que usar strcmp(), por agora deixo assim, depois pergunto ao professor...
         if(resposta.dados.status == DESCONHECIDO){
             erro("C5.1) Não existe registo do utente %d, %s", resposta.dados.cidadao.num_utente, resposta.dados.cidadao.nome);
+            exit(1);
         } 
 
         // C5.1) Se o status for NAOHAENFERMEIRO, imprime uma mensagem de erro, e termina com exit status 1;
         // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
         // erro("C5.1) Não existe enfermeiro na localidade do utente %d, %s", <num_utente>, <nome>);
 
+        else if(resposta.dados.status == NAOHAENFERMEIRO) {
+            erro("C5.1) Não existe enfermeiro na localidade do utente %d, %s", resposta.dados.cidadao.num_utente, resposta.dados.cidadao.nome);
+            exit(1);
+        }
+
         // C5.2) Se o status for VACINADO, imprime uma mensagem de sucesso, e termina com exit status 0;
         // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
         // sucesso("C5.2) O utente %d, %s já foi vacinado", <num_utente>, <nome>);
+
+        else if(resposta.dados.status == VACINADO){
+            sucesso("C5.2) O utente %d, %s já foi vacinado", resposta.dados.cidadao.num_utente, resposta.dados.cidadao.nome);
+            exit(0);
+        }
+
 
         // C5.2) Se o status for EMCURSO, imprime uma mensagem de sucesso, e termina com exit status 0;
         // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
         // sucesso("C5.3) A vacinação do utente %d, %s já está em curso", <num_utente>, <nome>);
 
+        else if(resposta.dados.status == EMCURSO){
+            sucesso("C5.3) A vacinação do utente %d, %s já está em curso", resposta.dados.cidadao.num_utente, resposta.dados.cidadao.nome);
+            exit(0);
+        }
+
         // C5.3) Se o status for AGUARDAR, imprime uma mensagem de sucesso, aguarda (sem espera ativa!) um tempo correspondente a TEMPO_ESPERA segundos, e depois retorna ao ponto C3;
         // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
         // sucesso("C5.4) Utente %d, %s, por favor aguarde...", <num_utente>, <nome>);
 
+        else if(resposta.dados.status == AGUARDAR){
+            sucesso("C5.4) Utente %d, %s, por favor aguarde...", resposta.dados.cidadao.num_utente, resposta.dados.cidadao.nome);
+            sleep(TEMPO_ESPERA);
+            goto C3; 
+
+        }
+
         // C5.4) Se o status for OK, imprime uma mensagem de sucesso, e depois vai para o ponto C6.
         // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
         // sucesso("C5.5) Utente %d, %s, vai agora ser vacinado", <num_utente>, <nome>);
+        else if(resposta.dados.status == OK){
+            sucesso("C5.5) Utente %d, %s, vai agora ser vacinado",resposta.dados.cidadao.num_utente, resposta.dados.cidadao.nome);
+            vacina();
+        }
     // } while (OK != <status>);
 
     debug(">");
@@ -217,7 +248,13 @@ void vacina() {
     // sucesso("C6.1) Dados completos sobre o cidadão a ser vacinado");
     // print_info(...);
 
+    sucesso("C6.1) Dados completos sobre o cidadão a ser vacinado");
+    print_info(resposta.dados.cidadao);
+
+
     // C6.2) Chama novamente a função espera_resposta_servidor(), que espera uma nova resposta do processo Servidor (na fila de mensagens com o tipo = PID_Cidadao) e preenche a mensagem enviada pelo processo Servidor na variável global resposta;
+
+    espera_resposta_servidor();
 
     // C6.3) O comportamento do processo Cidadão agora irá depender da resposta enviada pelo processo Servidor no campo status:
 
@@ -225,9 +262,19 @@ void vacina() {
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("C6.3.1) Utente %d, %s vacinado com sucesso", <num_utente>, <nome>);
 
+    if(resposta.dados.status == TERMINADA){
+        sucesso("C6.3.1) Utente %d, %s vacinado com sucesso", resposta.dados.cidadao.num_utente, resposta.dados.cidadao.nome);
+        exit(0);
+    }
+
     // C6.3.2) Se o status for CANCELADA, imprime uma mensagem de erro, e termina com exit status 1;
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // erro("C6.3.2) O servidor cancelou a vacinação em curso");
+
+    else if(resposta.dados.status == CANCELADA){
+        erro("C6.3.2) O servidor cancelou a vacinação em curso");
+        exit(1);
+    }
 
     debug(">");
 }

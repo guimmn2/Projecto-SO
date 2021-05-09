@@ -1,7 +1,7 @@
 /******************************************************************************
  ** ISCTE-IUL: Trabalho prático 3 de Sistemas Operativos
  **
- ** Aluno: Nº:       Nome: 
+ ** Aluno: Nº:98662       Nome:Guilherme Nunes 
  ** Nome do Módulo: servidor.c v3
  ** Descrição/Explicação do Módulo: 
  **
@@ -9,6 +9,7 @@
  ******************************************************************************/
 #include "common.h"
 #include "utils.h"
+#include <sys/ipc.h>
 #include <sys/stat.h>
 #include <signal.h>
 #include <unistd.h>
@@ -84,6 +85,25 @@ void init_ipc() {
 
     // sucesso("S1) Criados elementos IPC com a Key 0x%x: MSGid %d, SEMid %d, SHMid %d", IPC_KEY, msg_id, sem_id, shm_id);
 
+    //fila de mensagens
+    msg_id = msgget(IPC_KEY, 0600 | IPC_CREAT);
+    exit_on_error(msg_id, "S1) Fila de Mensagens com a Key definida já existe ou não pode ser criada");
+
+    //semáforo de dim 1 (determinado no 2º arg)
+    sem_id = semget(IPC_KEY,1, IPC_CREAT | 0600);
+    exit_on_error(sem_id, "S1) Semáforo com a Key definida já existe ou não pode ser criada");
+
+    //inicializar semáforo com o valor 1, de forma a seguir o padrão mutex
+    //o 2º argumento do semctl selecciona o semáforo 0 do "array" de sems, que por sua vez é de dim1; ou seja o único sem...
+    int status = semctl(sem_id,0,SETVAL,1);
+    exit_on_error(status, "S1) Semáforo com a Key definida não pode ser iniciado com o valor 1");
+
+    //inicializar memória partilhada
+    shm_id = shmget(IPC_KEY, sizeof(Database), IPC_CREAT | 0600); 
+    exit_on_error(shm_id, "S1) Memória Partilhada com a Key definida já existe ou não pode ser criada");
+    sucesso("S1) Criados elementos IPC com a Key 0x%x: MSGid %d, SEMid %d, SHMid %d", IPC_KEY, msg_id, sem_id, shm_id);
+
+
     debug(">");
 }
 
@@ -156,6 +176,12 @@ void init_database() {
     // • Inicia a Base de Dados de Vagas, db->vagas, colocando o campo index_cidadao de todos os elementos com o valor -1.
 
     // sucesso("S2) Base de dados carregada com %d cidadãos e %d enfermeiros", <num_cidadaos>, <num_enfermeiros>);
+
+    void *p = shmat(shm_id, 0, 0);//cria null pointer que aponta para inicio da mem partilhada
+    exit_on_null(p, "S2) Erro a ligar a Memória Dinâmica ao projeto");
+
+    db = (Database *) p;    //db fica igual a p, transformando p num pointer Database, acho eu...
+                            //se eu percebesse pointers como deve ser n teria problemas com isto...
 
     debug(">");
 }

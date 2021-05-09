@@ -1,7 +1,7 @@
 /******************************************************************************
  ** ISCTE-IUL: Trabalho prático 3 de Sistemas Operativos
  **
- ** Aluno: Nº:       Nome: 
+ ** Aluno: Nº:98662       Nome:Guilherme Nunes 
  ** Nome do Módulo: cidadao.c v3
  ** Descrição/Explicação do Módulo: 
  **
@@ -289,6 +289,8 @@ void cancela_pedido(int sinal) {
     // Outputs esperados (os itens entre <> deverão ser substituídos pelos valores correspondentes):
     // sucesso("C7.1) O cidadão cancelou a vacinação no processo %d", <PID_Cidadao>);
 
+    sucesso("C7.1) O cidadão cancelou a vacinação no processo %d",getpid());
+
     // C7.2) Altera a variável global mensagem, tornando pedido = CANCELAMENTO. Chama a função envia_mensagem_servidor(), que envia a mensagem para a fila de mensagens; em caso de erro no envio, afixa uma mensagem de erro e termina com exit status 1;
     envia_mensagem_servidor();
 
@@ -301,9 +303,19 @@ void cancela_pedido(int sinal) {
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("C7.4.1) Servidor confirmou cancelamento");
 
+    if(resposta.dados.status == CANCELADA){
+        sucesso("C7.4.1) Servidor confirmou cancelamento");
+        exit(0);
+    }
+
     // C7.4.2) Se o status for TERMINADA, imprime mensagem sucesso, termina com exit status 0;
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("C7.4.2) A vacinação já tinha sido concluída");
+
+    else if(resposta.dados.status == TERMINADA){
+        sucesso("C7.4.2) A vacinação já tinha sido concluída");
+        exit(0);
+    }
 
     debug(">");
 }

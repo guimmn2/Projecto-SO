@@ -190,17 +190,41 @@ void init_database() {
 
     //obtém tamanho do cidadaos.dat
     stat(FILE_CIDADAOS,&fs);
+    exit_on_error(stat(FILE_CIDADAOS, &fs), "Erro no cálculo do tamanho do ficheiro");
     int file_c_size = fs.st_size;
     debug("tamanho do ficheiro cidadaos.dat = %d\n", file_c_size);
 
     //obtém tamanho do enfermeiros.dat
     stat(FILE_ENFERMEIROS,&fs);
+    exit_on_error(stat(FILE_ENFERMEIROS, &fs), "Erro no cálculo do tamanho do ficheiro");
     int file_e_size = fs.st_size;
     debug("tamanho do ficheiro enfermeiros.dat = %d\n", file_e_size);
 
     //Aqui vou escrever para a DB, talvez seja necessário SEMÁFORO
+    //se calhar não, a não ser que outro processo tente escrever ao mesmo tempo na db
 
-    exit(0); //exit(0) provisorio, porque se compilar assim entra em loop.
+    read_binary(FILE_CIDADAOS, db->cidadaos, file_c_size); //não sei se tenho de meter aqui algum EOE
+    debug("%s\n", db->cidadaos[432].nome);
+
+    int n_cids = (int)(file_c_size/sizeof(Cidadao));
+    db->num_cidadaos = n_cids;
+    debug("nº de cidadãos em cidadãos.dat é: %d\n", n_cids);
+
+    read_binary(FILE_ENFERMEIROS,db->enfermeiros,file_e_size);//não sei se tenho de meter aqui algum EOE
+    debug("%s\n", db->enfermeiros[9].nome);
+
+    int n_enfs = (int)(file_e_size/sizeof(Enfermeiro));
+    db->num_enfermeiros = n_enfs;
+    debug("nº de enfermeiros em enfermeiros.dat é: %d\n", n_enfs);
+
+    for(int i = 0; i < MAX_VAGAS; i++){
+        db->vagas[i].index_cidadao = -1;
+        debug("%d\n", db->vagas[i].index_cidadao);
+    }
+
+
+    sucesso("S2) Base de dados carregada com %d cidadãos e %d enfermeiros", db->num_cidadaos, db->num_enfermeiros);
+
 
     debug(">");
 }
@@ -218,6 +242,25 @@ void espera_mensagem_cidadao() {
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // exit_on_error(<var>, "Não é possível ler a mensagem do Cidadao");
     // sucesso("Cidadão enviou mensagem");
+
+    //ASSUMINDO que o servidor está sempre à espera de mensagens, faço o seguinte:
+
+    int status;
+
+    while(1){
+        printf("Espera pedido ...\n");
+        
+        //tipo 1 corresponde a msgs enviadas pelos cids
+        status = msgrcv(msg_id, &mensagem, sizeof(MsgCliente), 1, 0); 
+        exit_on_error(status, "Não é possível ler a mensagem do Cidadao");
+        sucesso("Cidadão enviou mensagem");
+
+        //tipo da resposta corresponde ao PID_CIDADAO que a enviou,
+        //desta forma o cidadão sabe qual a mensagem para ele, é como um end. de destinatário
+        resposta.tipo = mensagem.dados.PID_cidadao;
+        debug("PID do cidadao recebido: %d\n", resposta.tipo);
+        
+    }
 
     debug(">");
 }

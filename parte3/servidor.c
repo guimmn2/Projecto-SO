@@ -181,7 +181,26 @@ void init_database() {
     exit_on_null(p, "S2) Erro a ligar a Memória Dinâmica ao projeto");
 
     db = (Database *) p;    //db fica igual a p, transformando p num pointer Database, acho eu...
-                            //se eu percebesse pointers como deve ser n teria problemas com isto...
+                            //se eu percebesse pointers como deve ser n teria problemas com isto...Anyways, onward!
+    
+    debug("depois de ligar a db à memória partilhada");
+    debug("tamanho de uma estrutura Database = %d\n", sizeof(Database));
+
+    struct stat fs;
+
+    //obtém tamanho do cidadaos.dat
+    stat(FILE_CIDADAOS,&fs);
+    int file_c_size = fs.st_size;
+    debug("tamanho do ficheiro cidadaos.dat = %d\n", file_c_size);
+
+    //obtém tamanho do enfermeiros.dat
+    stat(FILE_ENFERMEIROS,&fs);
+    int file_e_size = fs.st_size;
+    debug("tamanho do ficheiro enfermeiros.dat = %d\n", file_e_size);
+
+    //Aqui vou escrever para a DB, talvez seja necessário SEMÁFORO
+
+    exit(0); //exit(0) provisorio, porque se compilar assim entra em loop.
 
     debug(">");
 }
@@ -408,6 +427,9 @@ void termina_servidor(int sinal) {
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("S11.4) Servidor Terminado");
     // S11.5) Termina o processo servidor com exit status 0.
+
+    //exit(0) provisório
+    exit(0);
 
     debug(">");
 }

@@ -152,7 +152,7 @@ void espera_resposta_servidor() {
 void pedido() {
     debug("<");
 
-    // do {
+     do {
         // C3) Envia um pedido de consulta de vacinação para o processo Servidor, chamando a função envia_mensagem_servidor(), que envia uma mensagem para a fila de mensagens com tipo 1, com pedido = PEDIDO e os dados do cidadão; em caso de erro, termina com erro e exit status 1.
         C3: envia_mensagem_servidor();
         // C4) Chama a função espera_resposta_servidor(), que espera a resposta do processo Servidor (na fila de mensagens com o tipo = PID_Cidadao) e preenche a mensagem enviada pelo processo Servidor na variável global resposta; em caso de erro, termina com erro e exit status 1.
@@ -204,7 +204,7 @@ void pedido() {
         // sucesso("C5.4) Utente %d, %s, por favor aguarde...", <num_utente>, <nome>);
 
         else if(resposta.dados.status == AGUARDAR){
-            sucesso("C5.4) Utente %d, %s, por favor aguarde...", resposta.dados.cidadao.num_utente, resposta.dados.cidadao.nome);
+            sucesso("C5.3) Utente %d, %s, por favor aguarde...", resposta.dados.cidadao.num_utente, resposta.dados.cidadao.nome);
             sleep(TEMPO_ESPERA);
             goto C3; 
 
@@ -214,10 +214,10 @@ void pedido() {
         // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
         // sucesso("C5.5) Utente %d, %s, vai agora ser vacinado", <num_utente>, <nome>);
         else if(resposta.dados.status == OK){
-            sucesso("C5.5) Utente %d, %s, vai agora ser vacinado",resposta.dados.cidadao.num_utente, resposta.dados.cidadao.nome);
+            sucesso("C5.4) Utente %d, %s, vai agora ser vacinado",resposta.dados.cidadao.num_utente, resposta.dados.cidadao.nome);
             vacina();
         }
-    // } while (OK != <status>);
+     } while (OK != resposta.dados.status);
 
     debug(">");
 }

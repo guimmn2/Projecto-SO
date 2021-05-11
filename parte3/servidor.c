@@ -243,15 +243,10 @@ void espera_mensagem_cidadao() {
     // exit_on_error(<var>, "Não é possível ler a mensagem do Cidadao");
     // sucesso("Cidadão enviou mensagem");
 
-    //ASSUMINDO que o servidor está sempre à espera de mensagens, faço o seguinte:
-
-    int status;
-
-    while(1){
         printf("Espera pedido ...\n");
         
         //tipo 1 corresponde a msgs enviadas pelos cids
-        status = msgrcv(msg_id, &mensagem, sizeof(MsgCliente), 1, 0); 
+        int status = msgrcv(msg_id, &mensagem, sizeof(MsgCliente), 1, 0); 
         exit_on_error(status, "Não é possível ler a mensagem do Cidadao");
         sucesso("Cidadão enviou mensagem");
 
@@ -260,7 +255,6 @@ void espera_mensagem_cidadao() {
         resposta.tipo = mensagem.dados.PID_cidadao;
         debug("PID do cidadao recebido: %d\n", resposta.tipo);
         
-    }
 
     debug(">");
 }
@@ -273,17 +267,24 @@ void trata_mensagem_cidadao() {
 
     // S4) O comportamento do processo Servidor agora irá depender da variável global mensagem enviada pelo processo Cidadão no campo pedido
 
-    // if (...) {
+     if (mensagem.dados.pedido == PEDIDO) {
+         
         // S4.1) Se o pedido for PEDIDO, imprime uma mensagem e avança para o passo S5;
         // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
         // sucesso("S4.1) Novo pedido de vacinação de %d: %d, %s", <PID_cidadao>, <num_utente>, <nome>);
+
+        sucesso("S4.1) Novo pedido de vacinação de %d: %d, %s", mensagem.dados.PID_cidadao, mensagem.dados.num_utente, mensagem.dados.nome);
         processa_pedido();
-    // } else if (...) {
+
+     } else if (mensagem.dados.pedido == CANCELAMENTO) {
         // S4.2) Se o estado for CANCELAMENTO, imprime uma mensagem, e avança para o passo S10;
         // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
         // sucesso("S4.2) Cancelamento de vacinação de %d: %d, %s", <PID_cidadao>, <num_utente>, <nome>);
+
+        sucesso("S4.2) Cancelamento de vacinação de %d: %d, %s", mensagem.dados.PID_cidadao, mensagem.dados.num_utente, mensagem.dados.nome);
         cancela_pedido();
-    // }
+
+     }
 
     debug(">");
 }

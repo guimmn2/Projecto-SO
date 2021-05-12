@@ -205,7 +205,7 @@ void init_database() {
     //se calhar não, a não ser que outro processo tente escrever ao mesmo tempo na db
 
     read_binary(FILE_CIDADAOS, db->cidadaos, file_c_size); //não sei se tenho de meter aqui algum EOE
-    debug("%s\n", db->cidadaos[432].nome);
+    debug("%s\n", db->cidadaos[432].localidade);
 
     int n_cids = (int)(file_c_size/sizeof(Cidadao));
     db->num_cidadaos = n_cids;
@@ -254,7 +254,7 @@ void espera_mensagem_cidadao() {
         //tipo da resposta corresponde ao PID_CIDADAO que a enviou,
         //desta forma o cidadão sabe qual a mensagem para ele, é como um end. de destinatário
         resposta.tipo = mensagem.dados.PID_cidadao;
-        debug("PID do cidadao recebido: %d\n", resposta.tipo);
+        debug("PID do cidadao recebido: %ld\n", resposta.tipo);
         
 
     debug(">");
@@ -318,8 +318,11 @@ void processa_pedido() {
     // erro("S5.1) Cidadão %d, %s  não foi encontrado na BD Cidadãos", <num_utente>, <nome>);
     // sucesso("S5.1) Cidadão %d, %s encontrado, estado_vacinacao=%d, status=%d", <num_utente>, <nome>, <estado_vacinacao>, <status>);
 
+    int i; //para guardar, nesta função, o index do cidadão
+    int j; //para guardar, nesta função, o index do enfermeiro
 
-    for(int i = 0; i < db->num_cidadaos; i++){
+    //Aqui acedo à memória, ainda que apenas para ler, mas talvez seja necessário SEMÁFORO
+    for(i = 0; i < db->num_cidadaos; i++){
         
         int num_db = db->cidadaos[i].num_utente;
         debug("num_utente de cid em db é: %d\n", num_db);
@@ -335,31 +338,71 @@ void processa_pedido() {
             resposta.dados.cidadao.num_utente = num_db;
             strcpy(resposta.dados.cidadao.nome,nome_db);
 
+            //verifico se foi vacinado
             if(db->cidadaos[i].estado_vacinacao == 2){
                 resposta.dados.status = VACINADO;
+
+                //AQUI N SEI SE O CAMPO DE STATUS ESTÁ CORRECTO JÁ QUE FAZ PRINT DE 0...
+                sucesso("S5.1) Cidadão %d, %s encontrado, estado_vacinacao=%d, status=%d", db->cidadaos[i].num_utente, db->cidadaos[i].nome, db->cidadaos[i].estado_vacinacao, resposta.dados.status);
+
+                goto encontrei_cid; //salta msg de erro
             }
 
+            //verifico se está a ser vacinado
             else if(db->cidadaos[i].PID_cidadao > 0){
                 resposta.dados.status = EMCURSO;
+
+                //AQUI N SEI SE O CAMPO DE STATUS ESTÁ CORRECTO JÁ QUE FAZ PRINT DE 0...
+                sucesso("S5.1) Cidadão %d, %s encontrado, estado_vacinacao=%d, status=%d", db->cidadaos[i].num_utente, db->cidadaos[i].nome, db->cidadaos[i].estado_vacinacao, resposta.dados.status);
+
+                goto encontrei_cid; //salta msg de erro
             }
+            //AQUI ESCRITA EM SHMEM, SEMÁFORO
             else if(!(db->cidadaos[i].PID_cidadao > 0)){
                 db->cidadaos[i].PID_cidadao = mensagem.dados.PID_cidadao;
+
+                goto encontrei_cid; //salta msg de erro
             }
-
-            //AQUI N SEI SE O CAMPO DE STATUS ESTÁ CORRECTO JÁ QUE FAZ PRINT DE 0...
-            sucesso("S5.1) Cidadão %d, %s encontrado, estado_vacinacao=%d, status=%d", db->cidadaos[i].num_utente, db->cidadaos[i].nome, db->cidadaos[i].estado_vacinacao, resposta.dados.status);
-
-        } else { resposta.dados.status = DESCONHECIDO;
-                 erro("S5.1) Cidadão %d, %s  não foi encontrado na BD Cidadãos", mensagem.dados.num_utente, mensagem.dados.nome);
         }
-        exit(0);
     }
+    //se saio do loop sem saltar msg de erro, é pq n encontrei nenhum cid
+        resposta.dados.status = DESCONHECIDO;
+        erro("S5.1) Cidadão %d, %s  não foi encontrado na BD Cidadãos", mensagem.dados.num_utente, mensagem.dados.nome);
+
+        encontrei_cid:
+
     // S5.2) Caso o Cidadão esteja em condições de ser vacinado (i.e., se status não for DESCONHECIDO, VACINADO nem EMCURSO), procura o enfermeiro correspondente na BD Enfermeiros:
     //       • Se não houver centro de saúde, ou não houver nenhum enfermeiro no centro de saúde correspondente => status = NAOHAENFERMEIRO;
     //       • Se há enfermeiro, mas este não tiver disponibilidade => status = AGUARDAR.
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // erro("S5.2) Enfermeiro do CS %s não foi encontrado na BD Cidadãos", <localidade>);
     // sucesso("S5.2) Enfermeiro do CS %s encontrado, disponibilidade=%d, status=%d", <localidade>, <disponibilidade>, <status>);
+
+    //É, isto não é muito elegante, mas pronto ... 
+    if(resposta.dados.status != DESCONHECIDO && resposta.dados.status != VACINADO && resposta.dados.status != EMCURSO){
+
+        char localidade[100];
+        strcpy(localidade,"CS"); //Coloca CS nas primeiras posições
+        strcat(localidade,db->cidadaos[i].localidade); //concatena CS+localidade do cidadão encontrado
+        debug("localidade do cidadão %s: %s\n", db->cidadaos[i].nome, localidade);
+
+        for(j = 0; j < db->num_enfermeiros; j++){
+
+           if(strcmp(db->enfermeiros[j].CS_enfermeiro, localidade) == 0){ 
+
+               //encontrado o match de localidades, verifica disponibilidade do enfermeiro
+               if(db->enfermeiros[j].disponibilidade == 0){
+                   resposta.dados.status = AGUARDAR; 
+               }
+               
+               sucesso("S5.2) Enfermeiro do CS %s encontrado, disponibilidade=%d, status=%d", db->cidadaos[i].localidade, db->enfermeiros[j].disponibilidade, resposta.dados.status);
+               goto encontrei_enf; //salta msg de erro e mudança de status
+           }  
+        }
+
+        resposta.dados.status = NAOHAENFERMEIRO;
+        erro("S5.2) Enfermeiro do CS %s não foi encontrado na BD Cidadãos", db->cidadaos[i].localidade);
+    }
 
     // S5.3) Caso o enfermeiro esteja disponível, procura uma vaga para vacinação na BD Vagas. Para tal, chama a função reserva_vaga(Index_Cidadao, Index_Enfermeiro) usando os índices do Cidadão e do Enfermeiro nas respetivas BDs:
     //      • Se essa função tiver encontrado e reservado uma vaga => status = OK;
@@ -368,12 +411,23 @@ void processa_pedido() {
     // erro("S5.3) Não foi encontrada nenhuma vaga livre para vacinação");
     // sucesso("S5.3) Foi reservada a vaga %d para vacinação, status=%d", <index_vaga>, <status>);
 
+        encontrei_enf:
+
+        if(reserva_vaga(i, j) != -1){
+            resposta.dados.status = OK;
+            sucesso("S5.3) Foi reservada a vaga %d para vacinação, status=%d", vaga_ativa, resposta.dados.status);
+        }
+        else {
+            resposta.dados.status = AGUARDAR; 
+            erro("S5.3) Não foi encontrada nenhuma vaga livre para vacinação");
+        }
+
     // S5.4) Se no final de todos os checks, status for OK, chama a função vacina(),
-    // if (OK == <status>)
-    //    vacina();
+     if (OK == resposta.dados.status)
+        vacina();
     // S5.4) caso contrário, chama a função envia_resposta_cidadao(), que envia a resposta ao Cidadão;
-    // else
-    //     envia_resposta_cidadao();
+     else
+         envia_resposta_cidadao();
 
     debug(">");
 }
@@ -388,6 +442,10 @@ void vacina() {
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // exit_on_error(<var>, "S6.1) Não foi possível criar um novo processo");
     // sucesso("S6.1) Criado um processo filho com PID_filho=%d", <PID_filho>);
+
+    int n = fork();
+    exit_on_error(n, "S6.1) Não foi possível criar um novo processo");
+    sucesso("S6.1) Criado um processo filho com PID_filho=%d", n);
 
     // if (...) {   // Processo FILHO
         // S6.2) O processo filho chama a função servidor_dedicado();

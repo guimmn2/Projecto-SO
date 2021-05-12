@@ -9,6 +9,7 @@
  ******************************************************************************/
 #include "common.h"
 #include "utils.h"
+#include <string.h>
 #include <sys/ipc.h>
 #include <sys/stat.h>
 #include <signal.h>
@@ -317,6 +318,42 @@ void processa_pedido() {
     // erro("S5.1) Cidadão %d, %s  não foi encontrado na BD Cidadãos", <num_utente>, <nome>);
     // sucesso("S5.1) Cidadão %d, %s encontrado, estado_vacinacao=%d, status=%d", <num_utente>, <nome>, <estado_vacinacao>, <status>);
 
+
+    for(int i = 0; i < db->num_cidadaos; i++){
+        
+        int num_db = db->cidadaos[i].num_utente;
+        debug("num_utente de cid em db é: %d\n", num_db);
+
+        char nome_db[100]; strcpy(nome_db, db->cidadaos[i].nome);
+        debug("nome de cid em db é: %s\n", nome_db);
+
+        debug("nome e num em resposta são: %s %d\n", mensagem.dados.nome, mensagem.dados.num_utente);
+
+        //se encontrar num e nome na DB iguais à mensagem
+        if(num_db == mensagem.dados.num_utente && strcmp(nome_db,mensagem.dados.nome) == 0){
+
+            resposta.dados.cidadao.num_utente = num_db;
+            strcpy(resposta.dados.cidadao.nome,nome_db);
+
+            if(db->cidadaos[i].estado_vacinacao == 2){
+                resposta.dados.status = VACINADO;
+            }
+
+            else if(db->cidadaos[i].PID_cidadao > 0){
+                resposta.dados.status = EMCURSO;
+            }
+            else if(!(db->cidadaos[i].PID_cidadao > 0)){
+                db->cidadaos[i].PID_cidadao = mensagem.dados.PID_cidadao;
+            }
+
+            //AQUI N SEI SE O CAMPO DE STATUS ESTÁ CORRECTO JÁ QUE FAZ PRINT DE 0...
+            sucesso("S5.1) Cidadão %d, %s encontrado, estado_vacinacao=%d, status=%d", db->cidadaos[i].num_utente, db->cidadaos[i].nome, db->cidadaos[i].estado_vacinacao, resposta.dados.status);
+
+        } else { resposta.dados.status = DESCONHECIDO;
+                 erro("S5.1) Cidadão %d, %s  não foi encontrado na BD Cidadãos", mensagem.dados.num_utente, mensagem.dados.nome);
+        }
+        exit(0);
+    }
     // S5.2) Caso o Cidadão esteja em condições de ser vacinado (i.e., se status não for DESCONHECIDO, VACINADO nem EMCURSO), procura o enfermeiro correspondente na BD Enfermeiros:
     //       • Se não houver centro de saúde, ou não houver nenhum enfermeiro no centro de saúde correspondente => status = NAOHAENFERMEIRO;
     //       • Se há enfermeiro, mas este não tiver disponibilidade => status = AGUARDAR.

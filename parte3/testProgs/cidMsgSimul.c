@@ -6,15 +6,19 @@
 #include <sys/msg.h>
 
 int msg_id;
-
 MsgCliente msg;
+char ped[100];
 
 int main(){
 
+
     msg.tipo = 1;
+    msg.dados.pedido = PEDIDO;
+    msg.dados.num_utente = 37986;
+    strcpy(msg.dados.nome, "Miguel Vieira");
     msg.dados.PID_cidadao = getpid();
     
-    printf("debug -> msg.tipo = %d; msg.dados.PID_cidadao = %d", msg.tipo, msg.dados.PID_cidadao);
+    printf("enviada mensagem com:\n tipo: %ld\n num_utente: %d\n nome: %s\n PID: %d\n",msg.tipo, msg.dados.num_utente, msg.dados.nome,msg.dados.PID_cidadao);
 
     msg_id = msgget(IPC_KEY, 0666);
 

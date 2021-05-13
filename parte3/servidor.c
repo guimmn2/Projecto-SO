@@ -27,6 +27,12 @@ MsgCliente mensagem;    // Variável que tem a mensagem enviada do Cidadao para 
 MsgServidor resposta;   // Variável que tem a mensagem de resposta enviadas do Servidor para o Cidadao
 int vaga_ativa;         // Índice da BD de Vagas que foi reservado pela função reserva_vaga()
 
+/* Vars globais minhas */
+int i; //index do cidadão
+int j; //index do enfermeiro
+int sons[100]; //array para guardar pids-filho. Espero que o professor não crie mais do 100 processos filho
+int n_sons; //nº de processos-filho
+
 /* Protótipos de funções */
 void init_ipc();                    // Função a ser implementada pelos alunos
 void init_database();               // Função a ser implementada pelos alunos
@@ -300,6 +306,11 @@ void envia_resposta_cidadao() {
     // exit_on_error(<var>, "Não é possível enviar resposta para o cidadão");
     // sucesso("Resposta para o cidadão enviada");
 
+    int status = msgsnd(msg_id, &resposta, sizeof(MsgServidor),0);
+    exit_on_error(status, "Não é possível enviar resposta para o cidadão");
+    debug("enviada resposta ao cidadão %ld\n", resposta.tipo);
+    sucesso("Resposta para o cidadão enviada");
+
     debug(">");
 }
 
@@ -318,19 +329,17 @@ void processa_pedido() {
     // erro("S5.1) Cidadão %d, %s  não foi encontrado na BD Cidadãos", <num_utente>, <nome>);
     // sucesso("S5.1) Cidadão %d, %s encontrado, estado_vacinacao=%d, status=%d", <num_utente>, <nome>, <estado_vacinacao>, <status>);
 
-    int i; //para guardar, nesta função, o index do cidadão
-    int j; //para guardar, nesta função, o index do enfermeiro
 
     //Aqui acedo à memória, ainda que apenas para ler, mas talvez seja necessário SEMÁFORO
     for(i = 0; i < db->num_cidadaos; i++){
         
         int num_db = db->cidadaos[i].num_utente;
-        debug("num_utente de cid em db é: %d\n", num_db);
+        //debug("num_utente de cid em db é: %d\n", num_db);
 
         char nome_db[100]; strcpy(nome_db, db->cidadaos[i].nome);
-        debug("nome de cid em db é: %s\n", nome_db);
+        //debug("nome de cid em db é: %s\n", nome_db);
 
-        debug("nome e num em resposta são: %s %d\n", mensagem.dados.nome, mensagem.dados.num_utente);
+        //debug("nome e num em resposta são: %s %d\n", mensagem.dados.nome, mensagem.dados.num_utente);
 
         //se encontrar num e nome na DB iguais à mensagem
         if(num_db == mensagem.dados.num_utente && strcmp(nome_db,mensagem.dados.nome) == 0){
@@ -369,7 +378,6 @@ void processa_pedido() {
         resposta.dados.status = DESCONHECIDO;
         erro("S5.1) Cidadão %d, %s  não foi encontrado na BD Cidadãos", mensagem.dados.num_utente, mensagem.dados.nome);
 
-        encontrei_cid:
 
     // S5.2) Caso o Cidadão esteja em condições de ser vacinado (i.e., se status não for DESCONHECIDO, VACINADO nem EMCURSO), procura o enfermeiro correspondente na BD Enfermeiros:
     //       • Se não houver centro de saúde, ou não houver nenhum enfermeiro no centro de saúde correspondente => status = NAOHAENFERMEIRO;
@@ -378,8 +386,13 @@ void processa_pedido() {
     // erro("S5.2) Enfermeiro do CS %s não foi encontrado na BD Cidadãos", <localidade>);
     // sucesso("S5.2) Enfermeiro do CS %s encontrado, disponibilidade=%d, status=%d", <localidade>, <disponibilidade>, <status>);
 
+    encontrei_cid:
+
+
     //É, isto não é muito elegante, mas pronto ... 
     if(resposta.dados.status != DESCONHECIDO && resposta.dados.status != VACINADO && resposta.dados.status != EMCURSO){
+
+        debug("ENTREI NO IF NADA ELEGANTE!\n");
 
         char localidade[100];
         strcpy(localidade,"CS"); //Coloca CS nas primeiras posições
@@ -413,6 +426,7 @@ void processa_pedido() {
 
         encontrei_enf:
 
+        //i = ind cid; j = ind enf
         if(reserva_vaga(i, j) != -1){
             resposta.dados.status = OK;
             sucesso("S5.3) Foi reservada a vaga %d para vacinação, status=%d", vaga_ativa, resposta.dados.status);
@@ -443,16 +457,22 @@ void vacina() {
     // exit_on_error(<var>, "S6.1) Não foi possível criar um novo processo");
     // sucesso("S6.1) Criado um processo filho com PID_filho=%d", <PID_filho>);
 
+    //TENHO UM ARRAY DE FILHOS E GUARDO O Nº DE FILHOS
+    //ENCONTRAR FORMA MAIS ELEGANTE...
     int n = fork();
+    sons[n_sons] = n; //guarda no array de filhos
+    n_sons++; //incrementa pointer para a proxima posição livre no array
+
     exit_on_error(n, "S6.1) Não foi possível criar um novo processo");
     sucesso("S6.1) Criado um processo filho com PID_filho=%d", n);
 
-    // if (...) {   // Processo FILHO
+    if (n == 0) {   // Processo FILHO
         // S6.2) O processo filho chama a função servidor_dedicado();
-        // servidor_dedicado();
-    // } else {     // Processo PAI
+        servidor_dedicado();
+    } else {     // Processo PAI
         // S6.3) O processo pai regista o process ID do processo filho no campo PID_filho na BD de Vagas com o índice da variável global vaga_ativa;
-    //}
+        db->vagas[vaga_ativa].PID_filho = n;
+    }
 
     debug(">");
 }
@@ -464,9 +484,12 @@ void servidor_dedicado() {
     debug("<");
 
     // S7.1) Arma o sinal SIGTERM;
+    //NÃO ESQUECER DE IMPLEMENTAR FUNÇÃO
     signal(SIGTERM, termina_servidor_dedicado);
 
     // S7.2) Envia a resposta para o Cidadao, chamando a função envia_resposta_cidadao(). Implemente também esta função, que envia a mensagem resposta para o cidadao, contendo os dados do Cidadao preenchidos em S5.1 e o campo status = OK;
+
+    resposta.dados.status = OK;
     envia_resposta_cidadao();
 
     // S7.3) Coloca a disponibilidade do enfermeiro afeto à vaga_ativa com o valor 0 (Indisponível);
@@ -511,7 +534,19 @@ int reserva_vaga(int index_cidadao, int index_enfermeiro) {
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("S8.1.1) Encontrou uma vaga livre com o index %d", <vaga_ativa>);
 
+    for(int i = 0; i < MAX_VAGAS; i++){
+        debug("pesquisando ... vaga %d\n",i);
+        if(db->vagas[i].index_cidadao < 0) { vaga_ativa = i; break; }
+    }
+    sucesso("S8.1.1) Encontrou uma vaga livre com o index %d", vaga_ativa);
+
     // S8.1.2) Atualiza a entrada de Vagas vaga_ativa com o índice do cidadão e do enfermeiro
+    
+    db->vagas[vaga_ativa].index_cidadao = i; //ver vars globais, i = index cid
+    debug("index cidadão: %d\n",i);
+    db->vagas[vaga_ativa].index_enfermeiro = j; //ver vars globais, i = index cid
+    debug("index enfermeiro: %d\n",j);
+
 
     // S8.1.3) Retorna o valor do índice de vagas vaga_ativa ou -1 se não encontrou nenhuma vaga
     return vaga_ativa;
@@ -558,9 +593,9 @@ void termina_servidor(int sinal) {
 
     // S11.1) Envia um sinal SIGTERM a todos os processos Servidor Dedicado (filhos) ativos;
 
-    // S11.2) Grava o ficheiro FILE_ENFERMEIROS, usando a função save_binary();
+    
 
-    // S11.3) Grava o ficheiro FILE_CIDADAOS, usando a função save_binary();
+
 
     // S11.4) Remove do sistema (IPC Remove) os semáforos, a Memória Partilhada e a Fila de Mensagens.
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):

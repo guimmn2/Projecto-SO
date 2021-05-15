@@ -222,7 +222,7 @@ void init_database() {
 
     int n_enfs = (int)(file_e_size/sizeof(Enfermeiro));
     db->num_enfermeiros = n_enfs;
-    debug("nº de enfermeiros em enfermeiros.dat é: %d\n", n_enfs);
+    debug("nº de enfermeiros em enfermeiros.dat é: %d\n", db->num_enfermeiros);
 
     for(int i = 0; i < MAX_VAGAS; i++){
         db->vagas[i].index_cidadao = -1;
@@ -334,10 +334,10 @@ void processa_pedido() {
     for(i = 0; i < db->num_cidadaos; i++){
         
         int num_db = db->cidadaos[i].num_utente;
-        //debug("num_utente de cid em db é: %d\n", num_db);
+        debug("num_utente de cid em db é: %d\n", db->cidadaos[i].num_utente);
 
         char nome_db[100]; strcpy(nome_db, db->cidadaos[i].nome);
-        //debug("nome de cid em db é: %s\n", nome_db);
+        debug("nome de cid em db é: %s\n", db->cidadaos[i].nome);
 
         //debug("nome e num em resposta são: %s %d\n", mensagem.dados.nome, mensagem.dados.num_utente);
 
@@ -460,18 +460,27 @@ void vacina() {
     //TENHO UM ARRAY DE FILHOS E GUARDO O Nº DE FILHOS
     //ENCONTRAR FORMA MAIS ELEGANTE...
     int n = fork();
-    sons[n_sons] = n; //guarda no array de filhos
-    n_sons++; //incrementa pointer para a proxima posição livre no array
+    //sons[n_sons] = n; //guarda no array de filhos
+    //n_sons++; //incrementa pointer para a proxima posição livre no array
 
     exit_on_error(n, "S6.1) Não foi possível criar um novo processo");
     sucesso("S6.1) Criado um processo filho com PID_filho=%d", n);
 
     if (n == 0) {   // Processo FILHO
         // S6.2) O processo filho chama a função servidor_dedicado();
+        debug("entrei no código do filho, pid (n) = %d; ppid = %d\n", getpid(),getppid());
         servidor_dedicado();
     } else {     // Processo PAI
         // S6.3) O processo pai regista o process ID do processo filho no campo PID_filho na BD de Vagas com o índice da variável global vaga_ativa;
+        debug("código do pai , pid = %d\n",getpid());
+        //ESCRITA EM SHMEM , SEMÁFORO?!
+        sem_mutex_up();
+
         db->vagas[vaga_ativa].PID_filho = n;
+
+        sem_mutex_down();
+
+        debug("verifica se escreveu bem em db, PID_filho = %d\n", db->vagas[vaga_ativa].PID_filho);
     }
 
     debug(">");
@@ -481,7 +490,14 @@ void vacina() {
  * S7) Servidor Dedicado
  */
 void servidor_dedicado() {
+
     debug("<");
+
+    void *sp = shmat(shm_id, 0,0); //para o processo filho poder aceder à memória
+    db = (Database*) sp;
+
+    debug("verificar se é processo do filho? pid = %d\n", getpid());
+    debug("acede a db, para verificar se é pid_filho (guardado em db->vagas[vaga_activa].PID_filho)\n pid em db = %d\n", db->vagas[vaga_ativa].PID_filho);
 
     // S7.1) Arma o sinal SIGTERM;
     //NÃO ESQUECER DE IMPLEMENTAR FUNÇÃO
@@ -535,17 +551,20 @@ int reserva_vaga(int index_cidadao, int index_enfermeiro) {
     // sucesso("S8.1.1) Encontrou uma vaga livre com o index %d", <vaga_ativa>);
 
     for(int i = 0; i < MAX_VAGAS; i++){
-        debug("pesquisando ... vaga %d\n",i);
+        debug("pesquisando ... vaga = %d , index_cidadão = %d\n",i,db->vagas[i].index_cidadao);
         if(db->vagas[i].index_cidadao < 0) { vaga_ativa = i; break; }
     }
     sucesso("S8.1.1) Encontrou uma vaga livre com o index %d", vaga_ativa);
 
     // S8.1.2) Atualiza a entrada de Vagas vaga_ativa com o índice do cidadão e do enfermeiro
-    
+    sem_mutex_up();    
+
     db->vagas[vaga_ativa].index_cidadao = i; //ver vars globais, i = index cid
-    debug("index cidadão: %d\n",i);
+    debug("index cidadão: %d\n",db->vagas[vaga_ativa].index_cidadao);
     db->vagas[vaga_ativa].index_enfermeiro = j; //ver vars globais, i = index cid
-    debug("index enfermeiro: %d\n",j);
+    debug("index enfermeiro: %d\n",db->vagas[vaga_ativa].index_enfermeiro);
+
+    sem_mutex_down();
 
 
     // S8.1.3) Retorna o valor do índice de vagas vaga_ativa ou -1 se não encontrou nenhuma vaga
@@ -593,8 +612,6 @@ void termina_servidor(int sinal) {
 
     // S11.1) Envia um sinal SIGTERM a todos os processos Servidor Dedicado (filhos) ativos;
 
-    
-
 
 
     // S11.4) Remove do sistema (IPC Remove) os semáforos, a Memória Partilhada e a Fila de Mensagens.
@@ -602,8 +619,7 @@ void termina_servidor(int sinal) {
     // sucesso("S11.4) Servidor Terminado");
     // S11.5) Termina o processo servidor com exit status 0.
 
-    //exit(0) provisório
-    exit(0);
+    exit(0);/* provisório */
 
     debug(">");
 }
@@ -611,12 +627,22 @@ void termina_servidor(int sinal) {
 void termina_servidor_dedicado(int sinal) {
     debug("<");
 
+
+    debug("SINAL SIGTERM ? = %d verificar se é processo do filho? pid = %d\n",sinal, getpid());
+
     // S12) Implemente a função termina_servidor_dedicado(), que irá tratar do fecho do servidor dedicado, e que:
 
     // S12.1) Envia a resposta para o Cidadao, chamando a função envia_resposta_cidadao() com o campo status=CANCELADA, para indicar que a consulta foi cancelada;
+
+    resposta.dados.status = CANCELADA;
+    envia_resposta_cidadao();
+
     // S12.2) Liberta a vaga vaga_ativa da BD de Vagas, invocando a função liberta_vaga(vaga_ativa);
 
+    liberta_vaga(vaga_ativa);
+
     // S12.3) Termina o processo do servidor dedicado com exit status 0;
+    debug("EXIT(0)\n");
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("S12.3) Servidor Dedicado Terminado");
 

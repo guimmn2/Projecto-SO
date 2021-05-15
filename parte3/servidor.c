@@ -473,13 +473,9 @@ void vacina() {
     } else {     // Processo PAI
         // S6.3) O processo pai regista o process ID do processo filho no campo PID_filho na BD de Vagas com o índice da variável global vaga_ativa;
         debug("código do pai , pid = %d\n",getpid());
+
         //ESCRITA EM SHMEM , SEMÁFORO?!
-        sem_mutex_up();
-
-        db->vagas[vaga_ativa].PID_filho = n;
-
-        sem_mutex_down();
-
+        db->vagas[vaga_ativa].PID_filho = n;        
         debug("verifica se escreveu bem em db, PID_filho = %d\n", db->vagas[vaga_ativa].PID_filho);
     }
 
@@ -552,20 +548,28 @@ int reserva_vaga(int index_cidadao, int index_enfermeiro) {
 
     for(int i = 0; i < MAX_VAGAS; i++){
         debug("pesquisando ... vaga = %d , index_cidadão = %d\n",i,db->vagas[i].index_cidadao);
-        if(db->vagas[i].index_cidadao < 0) { vaga_ativa = i; break; }
+
+        if(db->vagas[i].index_cidadao < 0) {
+            debug("vaga %d livre, index_cid = %d\n",i, db->vagas[i].index_cidadao);
+            vaga_ativa = i;
+            break;
+        }
     }
     sucesso("S8.1.1) Encontrou uma vaga livre com o index %d", vaga_ativa);
 
     // S8.1.2) Atualiza a entrada de Vagas vaga_ativa com o índice do cidadão e do enfermeiro
-    sem_mutex_up();    
+
+    // ESCRITA EM SHMEM, SEMÁFORO ?
+    //TESTANDO SEMÁFOROS
+
+    sem_mutex_down();
 
     db->vagas[vaga_ativa].index_cidadao = i; //ver vars globais, i = index cid
     debug("index cidadão: %d\n",db->vagas[vaga_ativa].index_cidadao);
     db->vagas[vaga_ativa].index_enfermeiro = j; //ver vars globais, i = index cid
     debug("index enfermeiro: %d\n",db->vagas[vaga_ativa].index_enfermeiro);
 
-    sem_mutex_down();
-
+    sem_mutex_up();
 
     // S8.1.3) Retorna o valor do índice de vagas vaga_ativa ou -1 se não encontrou nenhuma vaga
     return vaga_ativa;

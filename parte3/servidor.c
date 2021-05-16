@@ -364,7 +364,6 @@ void processa_pedido() {
             else if(db->cidadaos[i].PID_cidadao > 0){
                 resposta.dados.status = EMCURSO;
 
-                //AQUI N SEI SE O CAMPO DE STATUS ESTÁ CORRECTO JÁ QUE FAZ PRINT DE 0...
                 index_cid_global = i; //guarda index do cid encontrado, ver vars globais
                 sucesso("S5.1) Cidadão %d, %s encontrado, estado_vacinacao=%d, status=%d", db->cidadaos[i].num_utente, db->cidadaos[i].nome, db->cidadaos[i].estado_vacinacao, resposta.dados.status);
 
@@ -434,7 +433,6 @@ void processa_pedido() {
 
         encontrei_enf:
 
-        //i = ind cid; j = ind enf
         if(reserva_vaga(index_cid_global, index_enf_global) != -1){
             resposta.dados.status = OK;
             sucesso("S5.3) Foi reservada a vaga %d para vacinação, status=%d", vaga_ativa, resposta.dados.status);
@@ -483,8 +481,13 @@ void vacina() {
         debug("código do pai , pid = %d\n",getpid());
 
         //ESCRITA EM SHMEM , SEMÁFORO?!
+
+        sem_mutex_down();
+
         db->vagas[vaga_ativa].PID_filho = n;        
         debug("verifica se escreveu bem em db, PID_filho = %d\n", db->vagas[vaga_ativa].PID_filho);
+
+        sem_mutex_up();
     }
 
     debug(">");
@@ -552,7 +555,7 @@ void servidor_dedicado() {
     //NOT SURE ABOUT THIS ...
     sucesso("S7.8) Servidor dedicado Terminado"); 
     debug("pid = %d\n", getpid());
-    //kill(db->vagas[vaga_ativa].PID_filho, SIGKILL);
+
     exit(0);
 
     debug(">");
@@ -590,9 +593,9 @@ int reserva_vaga(int index_cidadao, int index_enfermeiro) {
     sem_mutex_down();
 
     db->vagas[vaga_ativa].index_cidadao = index_cid_global; //ver vars globais, i = index cid
-    debug("index cidadão: %d\n",db->vagas[vaga_ativa].index_cidadao);
+    debug("index cidadão (VAR GLOBAL): %d\n",db->vagas[vaga_ativa].index_cidadao);
     db->vagas[vaga_ativa].index_enfermeiro = index_enf_global; //ver vars globais, i = index cid
-    debug("index enfermeiro: %d\n",db->vagas[vaga_ativa].index_enfermeiro);
+    debug("index enfermeiro (VAR GLOBAL): %d\n",db->vagas[vaga_ativa].index_enfermeiro);
 
     sem_mutex_up();
 
@@ -608,7 +611,9 @@ int reserva_vaga(int index_cidadao, int index_enfermeiro) {
 void liberta_vaga(int index_vaga) {
     debug("<");
 
+    sem_mutex_down();
     db->vagas[vaga_ativa].index_cidadao = -1;
+    sem_mutex_up();
 
     debug(">");
 }
@@ -629,6 +634,47 @@ void cancela_pedido() {
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("S10.2) Enviado sinal SIGTERM ao Servidor Dedicado com PID=%d", <PID_filho>);
 
+    int pid_filho_temp;
+    int i_temp;
+    int exists = 0;
+
+    debug("cid em msgCid = %s\n", mensagem.dados.nome);
+    //Não estou a ver outra forma senão mudar a var global do index_cid_global para a da msg
+    //já que este é definido apenas em processa_pedido(), que não é chamada quando esta é
+
+    for(int i = 0; i < db->num_cidadaos; i++){
+        if(mensagem.dados.num_utente == db->cidadaos[i].num_utente){
+            index_cid_global = i;
+            debug("encontrei o cidadão %s no indice %d do array de cids em db\n", db->cidadaos[index_cid_global].nome, i);
+            break;
+        }
+    }
+
+    //depois de ter encontrado o indice do cidadão em questão no array de cidadãos
+    //vou à procura dele nas vagas
+
+    for(int i = 0; i < MAX_VAGAS; i++){
+        if(db->vagas[i].index_cidadao == index_cid_global){
+            debug("cidadão encontrado nome = %s na vaga %d\n", db->cidadaos[db->vagas[i].index_cidadao].nome, i);
+            exists = 1;
+            i_temp = i;
+            break;
+        }
+    }
+
+
+    if(exists == 1){
+        debug("encontrado pid %d na vaga %d\n",pid_filho_temp, i_temp);
+        sucesso("S10.1) Foi encontrada a sessão do cidadão %d, %s na sala com o index %d", db->cidadaos[i_temp].num_utente, db->cidadaos[i_temp].nome, vaga_ativa);
+        kill(db->vagas[i_temp].PID_filho,SIGTERM);
+        sucesso("S10.2) Enviado sinal SIGTERM ao Servidor Dedicado com PID=%d", db->vagas[i_temp].PID_filho);
+    } else {
+        erro("S10.1) Não foi encontrada nenhuma sessão do cidadão %d, %s", db->cidadaos[index_cid_global].num_utente, db->cidadaos[index_cid_global].nome);
+    }
+
+
+
+
     debug(">");
 }
 
@@ -642,13 +688,27 @@ void termina_servidor(int sinal) {
 
     // S11.1) Envia um sinal SIGTERM a todos os processos Servidor Dedicado (filhos) ativos;
 
-
+    for(int i = 0; i < MAX_VAGAS; i++){
+        debug("pids filhos --> %d\n", db->vagas[i].PID_filho);
+        if(db->vagas[i].PID_filho > 0){
+            debug("encontrei um para matar eheheh --> %d\n", db->vagas[i].PID_filho);
+            kill(db->vagas[i].PID_filho,SIGTERM);
+        }
+    }
 
     // S11.4) Remove do sistema (IPC Remove) os semáforos, a Memória Partilhada e a Fila de Mensagens.
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("S11.4) Servidor Terminado");
     // S11.5) Termina o processo servidor com exit status 0.
 
+    int msg_ctl_status = msgctl(msg_id, IPC_RMID, NULL); 
+    exit_on_error(msg_ctl_status, "não consegui fechar fila de msgs!\n");
+
+    int sem_ctl_status = semctl(sem_id,0,IPC_RMID);
+    exit_on_error(sem_ctl_status, "não consegui fechar semáforo!\n");
+
+    int shmem_ctl_status = shmctl(shm_id, IPC_RMID, NULL);
+    exit_on_error(shmem_ctl_status, "não consegui fechar memória!\n");
     exit(0);/* provisório */
 
     debug(">");

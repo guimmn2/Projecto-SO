@@ -13,7 +13,7 @@ int main(){
 
 
     msg.tipo = 1;
-    msg.dados.pedido = CANCELAMENTO;
+    msg.dados.pedido = PEDIDO;
     msg.dados.num_utente = 100275;
     strcpy(msg.dados.nome, "Tiago Faria");
     msg.dados.PID_cidadao = getpid();

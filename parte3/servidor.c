@@ -739,6 +739,7 @@ void termina_servidor_dedicado(int sinal) {
 
     //acho que é só meter aqui um exit(0), já que este código só é alcançado por processos-filho
     //recebendo o sigterm do pai, sai ...
+    sucesso("S12.3) Servidor Dedicado Terminado");
     exit(0);
 
     debug(">");

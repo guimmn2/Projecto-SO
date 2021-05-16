@@ -131,7 +131,7 @@ void espera_resposta_servidor() {
     int status;
     MsgServidor m; //instancia um struct MsgServidor para guardar a resposta do servidor
 
-    printf("%d\n", mensagem.dados.PID_cidadao);
+    debug("%d\n", mensagem.dados.PID_cidadao);
     status = msgrcv(msg_id, &m, sizeof(m), mensagem.dados.PID_cidadao,0);
     //aqui no 1º parâmetro do EOE perguntar ao prof se é para por o status ou o valor 1
     exit_on_error(status,"Não é possível ler a resposta do servidor");

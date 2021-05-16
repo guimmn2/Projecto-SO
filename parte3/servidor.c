@@ -732,9 +732,12 @@ void termina_servidor_dedicado(int sinal) {
     liberta_vaga(vaga_ativa);
 
     // S12.3) Termina o processo do servidor dedicado com exit status 0;
-    debug("EXIT(0)\n");
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("S12.3) Servidor Dedicado Terminado");
+
+    //acho que é só meter aqui um exit(0), já que este código só é alcançado por processos-filho
+    //recebendo o sigterm do pai, sai ...
+    exit(0);
 
     debug(">");
 }

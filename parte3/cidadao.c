@@ -318,4 +318,4 @@ void cancela_pedido(int sinal) {
     }
 
     debug(">");
-}
+    }

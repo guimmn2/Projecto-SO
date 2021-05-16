@@ -28,8 +28,8 @@ MsgServidor resposta;   // Variável que tem a mensagem de resposta enviadas do 
 int vaga_ativa;         // Índice da BD de Vagas que foi reservado pela função reserva_vaga()
 
 /* Vars globais minhas */
-int i; //index do cidadão
-int j; //index do enfermeiro
+int index_cid_global; //index do cidadão
+int index_enf_global; //index do enfermeiro
 int sons[100]; //array para guardar pids-filho. Espero que o professor não crie mais do 100 processos filho
 int n_sons; //nº de processos-filho
 
@@ -93,7 +93,7 @@ void init_ipc() {
     // sucesso("S1) Criados elementos IPC com a Key 0x%x: MSGid %d, SEMid %d, SHMid %d", IPC_KEY, msg_id, sem_id, shm_id);
 
     //fila de mensagens
-    msg_id = msgget(IPC_KEY, 0600 | IPC_CREAT);
+    msg_id = msgget(IPC_KEY, IPC_CREAT | 0600);
     exit_on_error(msg_id, "S1) Fila de Mensagens com a Key definida já existe ou não pode ser criada");
 
     //semáforo de dim 1 (determinado no 2º arg)
@@ -331,7 +331,9 @@ void processa_pedido() {
 
 
     //Aqui acedo à memória, ainda que apenas para ler, mas talvez seja necessário SEMÁFORO
-    for(i = 0; i < db->num_cidadaos; i++){
+
+    //AQUI É DEFINIDIO O i GLOBAL PARA O INDEX_CID
+    for(int i = 0; i < db->num_cidadaos; i++){
         
         int num_db = db->cidadaos[i].num_utente;
         debug("num_utente de cid em db é: %d\n", db->cidadaos[i].num_utente);
@@ -352,6 +354,7 @@ void processa_pedido() {
                 resposta.dados.status = VACINADO;
 
                 //AQUI N SEI SE O CAMPO DE STATUS ESTÁ CORRECTO JÁ QUE FAZ PRINT DE 0...
+                index_cid_global = i; //guarda index do cid encontrado, ver vars globais
                 sucesso("S5.1) Cidadão %d, %s encontrado, estado_vacinacao=%d, status=%d", db->cidadaos[i].num_utente, db->cidadaos[i].nome, db->cidadaos[i].estado_vacinacao, resposta.dados.status);
 
                 goto encontrei_cid; //salta msg de erro
@@ -362,6 +365,7 @@ void processa_pedido() {
                 resposta.dados.status = EMCURSO;
 
                 //AQUI N SEI SE O CAMPO DE STATUS ESTÁ CORRECTO JÁ QUE FAZ PRINT DE 0...
+                index_cid_global = i; //guarda index do cid encontrado, ver vars globais
                 sucesso("S5.1) Cidadão %d, %s encontrado, estado_vacinacao=%d, status=%d", db->cidadaos[i].num_utente, db->cidadaos[i].nome, db->cidadaos[i].estado_vacinacao, resposta.dados.status);
 
                 goto encontrei_cid; //salta msg de erro
@@ -370,6 +374,8 @@ void processa_pedido() {
             else if(!(db->cidadaos[i].PID_cidadao > 0)){
                 db->cidadaos[i].PID_cidadao = mensagem.dados.PID_cidadao;
 
+                index_cid_global = i; //guarda index do cid encontrado, ver vars globais
+                sucesso("S5.1) Cidadão %d, %s encontrado, estado_vacinacao=%d, status=%d", db->cidadaos[i].num_utente, db->cidadaos[i].nome, db->cidadaos[i].estado_vacinacao, resposta.dados.status);
                 goto encontrei_cid; //salta msg de erro
             }
         }
@@ -396,10 +402,11 @@ void processa_pedido() {
 
         char localidade[100];
         strcpy(localidade,"CS"); //Coloca CS nas primeiras posições
-        strcat(localidade,db->cidadaos[i].localidade); //concatena CS+localidade do cidadão encontrado
-        debug("localidade do cidadão %s: %s\n", db->cidadaos[i].nome, localidade);
+        strcat(localidade,db->cidadaos[index_cid_global].localidade); //concatena CS+localidade do cidadão encontrado
+        debug("localidade do cidadão %s: %s\n", db->cidadaos[index_cid_global].nome, localidade);
 
-        for(j = 0; j < db->num_enfermeiros; j++){
+    //AQUI É DEFINIDIO O i GLOBAL PARA O INDEX_CID
+        for(int j = 0; j < db->num_enfermeiros; j++){
 
            if(strcmp(db->enfermeiros[j].CS_enfermeiro, localidade) == 0){ 
 
@@ -408,13 +415,14 @@ void processa_pedido() {
                    resposta.dados.status = AGUARDAR; 
                }
                
-               sucesso("S5.2) Enfermeiro do CS %s encontrado, disponibilidade=%d, status=%d", db->cidadaos[i].localidade, db->enfermeiros[j].disponibilidade, resposta.dados.status);
+               index_enf_global = j;
+               sucesso("S5.2) Enfermeiro do CS %s encontrado, disponibilidade=%d, status=%d", db->cidadaos[index_cid_global].localidade, db->enfermeiros[j].disponibilidade, resposta.dados.status);
                goto encontrei_enf; //salta msg de erro e mudança de status
            }  
         }
 
         resposta.dados.status = NAOHAENFERMEIRO;
-        erro("S5.2) Enfermeiro do CS %s não foi encontrado na BD Cidadãos", db->cidadaos[i].localidade);
+        erro("S5.2) Enfermeiro do CS %s não foi encontrado na BD Cidadãos", db->cidadaos[index_cid_global].localidade);
     }
 
     // S5.3) Caso o enfermeiro esteja disponível, procura uma vaga para vacinação na BD Vagas. Para tal, chama a função reserva_vaga(Index_Cidadao, Index_Enfermeiro) usando os índices do Cidadão e do Enfermeiro nas respetivas BDs:
@@ -427,7 +435,7 @@ void processa_pedido() {
         encontrei_enf:
 
         //i = ind cid; j = ind enf
-        if(reserva_vaga(i, j) != -1){
+        if(reserva_vaga(index_cid_global, index_enf_global) != -1){
             resposta.dados.status = OK;
             sucesso("S5.3) Foi reservada a vaga %d para vacinação, status=%d", vaga_ativa, resposta.dados.status);
         }
@@ -489,11 +497,7 @@ void servidor_dedicado() {
 
     debug("<");
 
-    void *sp = shmat(shm_id, 0,0); //para o processo filho poder aceder à memória
-    db = (Database*) sp;
-
-    debug("verificar se é processo do filho? pid = %d\n", getpid());
-    debug("acede a db, para verificar se é pid_filho (guardado em db->vagas[vaga_activa].PID_filho)\n pid em db = %d\n", db->vagas[vaga_ativa].PID_filho);
+    debug("verificar se PID_filho foi bem guardado em db pid_db = %d getpid = %d\n",db->vagas[vaga_ativa].PID_filho, getpid());
 
     // S7.1) Arma o sinal SIGTERM;
     //NÃO ESQUECER DE IMPLEMENTAR FUNÇÃO
@@ -508,10 +512,19 @@ void servidor_dedicado() {
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("S7.3) Enfermeiro associado à vaga %d indisponível", <vaga_ativa>);
 
+    int index_enf = db->vagas[vaga_ativa].index_enfermeiro;
+    debug("vaga_ativa index_enf %d --> %s\n", index_enf, db->enfermeiros[index_enf].nome);
+    db->enfermeiros[index_enf].disponibilidade = 0;
+    sucesso("S7.3) Enfermeiro associado à vaga %d indisponível", vaga_ativa);
+
     // S7.4) Imprime uma mensagem;
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("S7.4) Vacina em curso para o cidadão %d, %s, e com o enfermeiro %d, %s na vaga %d", <num_utente>, <nome cidadao>, <ced_profissional>, <nome enfermeiro>, <vaga_ativa>);
     // S7.4) Aguarda (em espera passiva!) TEMPO_CONSULTA segundos;
+
+    int index_cid = db->vagas[vaga_ativa].index_cidadao;
+    debug("vaga_ativa index_cid %d--> %s\n",index_cid, db->cidadaos[index_cid].nome);
+    sucesso("S7.4) Vacina em curso para o cidadão %d, %s, e com o enfermeiro %d, %s na vaga %d", db->cidadaos[index_cid].num_utente, db->cidadaos[index_cid].nome, db->enfermeiros[index_enf].ced_profissional,db->enfermeiros[index_enf].nome , vaga_ativa);
 
     // S7.5) Envia nova resposta para o Cidadao, chamando a função envia_resposta_cidadao() contendo os dados do Cidadao preenchidos em S5.1 e o campo status = TERMINADA, para indicar que a consulta terminou com sucesso;
     envia_resposta_cidadao();
@@ -523,12 +536,24 @@ void servidor_dedicado() {
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("S7.6) Cidadão atualizado na BD para estado_vacinacao=%d, Enfermeiro atualizado na BD para nr_vacinas_dadas=%d e disponibilidade=%d", <estado_vacinacao>, <nr_vacinas_dadas>, <disponibilidade>);
 
+    db->cidadaos[index_cid].estado_vacinacao++;
+    db->cidadaos[index_cid].PID_cidadao = -1 ;
+    db->enfermeiros[index_enf].nr_vacinas_dadas++;
+    db->enfermeiros[index_enf].disponibilidade = 1;
+    sucesso("S7.6) Cidadão atualizado na BD para estado_vacinacao=%d, Enfermeiro atualizado na BD para nr_vacinas_dadas=%d e disponibilidade=%d", db->cidadaos[index_cid].estado_vacinacao, db->enfermeiros[index_enf].nr_vacinas_dadas, db->enfermeiros[index_enf].disponibilidade);
+
     // S7.7) Liberta a vaga vaga_ativa da BD de Vagas, invocando a função liberta_vaga(vaga_ativa);
     liberta_vaga(vaga_ativa);
 
     // S7.8) Termina o processo Servidor Dedicado (filho) com exit status 0.
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("S7.8) Servidor dedicado Terminado"); 
+
+    //NOT SURE ABOUT THIS ...
+    sucesso("S7.8) Servidor dedicado Terminado"); 
+    debug("pid = %d\n", getpid());
+    //kill(db->vagas[vaga_ativa].PID_filho, SIGKILL);
+    exit(0);
 
     debug(">");
 }
@@ -564,9 +589,9 @@ int reserva_vaga(int index_cidadao, int index_enfermeiro) {
 
     sem_mutex_down();
 
-    db->vagas[vaga_ativa].index_cidadao = i; //ver vars globais, i = index cid
+    db->vagas[vaga_ativa].index_cidadao = index_cid_global; //ver vars globais, i = index cid
     debug("index cidadão: %d\n",db->vagas[vaga_ativa].index_cidadao);
-    db->vagas[vaga_ativa].index_enfermeiro = j; //ver vars globais, i = index cid
+    db->vagas[vaga_ativa].index_enfermeiro = index_enf_global; //ver vars globais, i = index cid
     debug("index enfermeiro: %d\n",db->vagas[vaga_ativa].index_enfermeiro);
 
     sem_mutex_up();
@@ -583,6 +608,7 @@ int reserva_vaga(int index_cidadao, int index_enfermeiro) {
 void liberta_vaga(int index_vaga) {
     debug("<");
 
+    db->vagas[vaga_ativa].index_cidadao = -1;
 
     debug(">");
 }

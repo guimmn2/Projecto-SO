@@ -466,8 +466,6 @@ void vacina() {
     //TENHO UM ARRAY DE FILHOS E GUARDO O Nº DE FILHOS
     //ENCONTRAR FORMA MAIS ELEGANTE...
     int n = fork();
-    //sons[n_sons] = n; //guarda no array de filhos
-    //n_sons++; //incrementa pointer para a proxima posição livre no array
 
     exit_on_error(n, "S6.1) Não foi possível criar um novo processo");
     sucesso("S6.1) Criado um processo filho com PID_filho=%d", n);
@@ -539,11 +537,15 @@ void servidor_dedicado() {
     // Outputs esperados (itens entre <> substituídos pelos valores correspondentes):
     // sucesso("S7.6) Cidadão atualizado na BD para estado_vacinacao=%d, Enfermeiro atualizado na BD para nr_vacinas_dadas=%d e disponibilidade=%d", <estado_vacinacao>, <nr_vacinas_dadas>, <disponibilidade>);
 
+    sem_mutex_down();
+
     db->cidadaos[index_cid].estado_vacinacao++;
     db->cidadaos[index_cid].PID_cidadao = -1 ;
     db->enfermeiros[index_enf].nr_vacinas_dadas++;
     db->enfermeiros[index_enf].disponibilidade = 1;
     sucesso("S7.6) Cidadão atualizado na BD para estado_vacinacao=%d, Enfermeiro atualizado na BD para nr_vacinas_dadas=%d e disponibilidade=%d", db->cidadaos[index_cid].estado_vacinacao, db->enfermeiros[index_enf].nr_vacinas_dadas, db->enfermeiros[index_enf].disponibilidade);
+
+    sem_mutex_up();
 
     // S7.7) Liberta a vaga vaga_ativa da BD de Vagas, invocando a função liberta_vaga(vaga_ativa);
     liberta_vaga(vaga_ativa);
